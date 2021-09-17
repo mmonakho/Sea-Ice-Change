@@ -1,0 +1,231 @@
+---
+title: "read_cdr_monthly"
+authors: "Sam Kitrea"
+date: "7/20/2021"
+output: html_document
+###July 20 2021
+### SESYNC Sea Ice Stories
+### Objective: Read in CDR Monthly data
+### Output: Sea Ice Min Extent Time Series; Sea Ice Area Time Series
+
+---
+### Sea Ice Stories: SESYNC Workshop 2021
+#### Identifying Sea Ice Anomalies
+Samuel Aucoin, Kitrea Takata-Glushkoff
+
+
+```{r setup, include=FALSE}
+#Install Necessary Packages on First Run (comment out after first run)
+#install.packages('ncdf4')
+
+#Load Libraries
+library(ncdf4) # package for netcdf manipulation
+library(raster) # package for raster manipulation
+library(rgdal) # package for geospatial analysis
+library(ggplot2) # package for plotting
+library(caTools)
+
+
+#Settings
+options(max.print=9999)
+#Note - data file is in uploaded in this project.
+#If you cannot access the data file within the project,
+#set your filepath accordingly. 
+getwd()
+
+filepath <- '/Volumes/KTG_SSD/SESYNC/data/aggregate'
+
+filename <- 'seaice_conc_monthly_nh_197811_202012_v04r00.nc'
+
+#Load In Data
+filename <- 'seaice_conc_monthly_nh_197811_202012_v04r00.nc'
+nc_data <- nc_open(filename)
+
+lon <- ncvar_get(nc_data, "longitude")
+lat <- ncvar_get(nc_data, "latitude")
+time <- ncvar_get(nc_data, "time")
+sic <- ncvar_get(nc_data, 'cdr_seaice_conc_monthly')
+
+
+sic[sic > 1] <- NaN                      #replacing flag values with NaNs
+
+#Define Sea Ice Area
+sia <- sic*(25^2)                        #sea ice area in each cell in km^2
+
+#Define Sea Ice Extent
+sie <- replace(sic, sic>=.15, 1)         #cells with sic >= 15 are considered ice-covered
+sie <- replace(sie, sie<.15, 0)          #cells with sic < 15 considered ice-free
+sie <- sie*(25^2)
+
+#Aggregate cells across entire Arctic
+icearea <- apply(sia, 3, sum, na.rm = TRUE)  #summing ice area across all pixels per month
+total_sie <-  apply(sie, 3, sum, na.rm = TRUE) #not sure if this works yet
+
+icearea[icearea == 0] <- NaN               #replacing months with missing data with NaNs
+total_sie[total_sie == 0] <- NaN   
+
+
+icearea <- icearea[c(-1, -2)]            #Deleting nov and dec of 1978
+time <- time[c(-1, -2)]                  #Deleting nov and dec of 1978
+total_sie <- total_sie[c(-1, -2)]        #Deleting nov and dec of 1978
+
+yearly <- matrix(icearea, nrow = 42, byrow = TRUE) #each col is a month; rows are years
+
+yearly_sie <- matrix(total_sie, nrow = 42, byrow = TRUE)
+
+
+#Making the september sie anomaly
+
+mean_sie <- mean(yearly_sie[3:32,9])     #Mean of September sie on the 1981-2010 period
+
+anomaly_sie <- (yearly_sie[ , 9] - mean_sie)/1e+06
+
+#or by percent
+percent_anomaly <- (anomaly_sie/(mean_sie/1e+06))*100
+
+t <- 1979:2020
+sie_trend <- lm(formula = anomaly_sie ~ t)
+
+#normalizing the data with the trendline
+anomaly_norm <- anomaly_sie - sie_trend[["fitted.values"]]
+
+#finding the standard deviation of the data
+anomaly_sd <- sd(anomaly_norm)
+
+```
+
+### Figure 1.Sea Ice Area (September)
+Region: Complete Arctic
+Measure: Sea Ice Area in September of Each Year (from monthly average)
+
+
+```{r, echo = FALSE }
+
+### Plot September Total Sea Ice Area###
+icearea_sep <- yearly[ , 9]              #taking september
+
+icearea_sep <- icearea_sep/1e+06         #making units million km^2
+
+plot(1979:2020, icearea_sep, type = 'b',
+     main = 'September Arctic Sea Ice Area',
+     xlab = 'Year',
+     ylab = 'Ice Area (million km^2)',
+     col = "darkblue",
+     cex.lab = 1.2,
+     cex.axis = 1, 
+     font.lab = 1,
+     cex = 0.7,
+     pch = 16, 
+     )
+
+#abline(linregmod, col = "red", lty = 2) #add linear trendline
+```
+
+
+### Figure 2. September Sea Ice Extent
+```{r, echo = FALSE }
+
+### Plot ###
+iceextent_sep <- yearly_sie[ , 9]         #taking september
+
+iceextent_sep <- iceextent_sep/1e+06      #making units million km^2
+
+plot(1979:2020, iceextent_sep, type = 'b',
+     main = 'September Arctic Sea Ice Extent',
+     xlab = 'Year',
+     ylab = 'Ice Extent (million km^2)',
+     col = "darkblue",
+     cex.lab = 1.2,
+     cex.axis = 1, 
+     font.lab = 1,
+     cex = 0.7,
+     pch = 16,
+     )
+
+#abline(linregmod, col = "red", lty = 2)  #add linear trendline
+
+```
+
+### Figure 3. Arctic September Sea Ice Extent Anomaly (Area)
+Region: Complete Arctic
+Measure: September Sea Ice Extent Anomaly
+
+```{r, echo=FALSE, fig.keep='all'}
+
+### Plot September Total Sea Ice Extent Anomaly###
+
+t <- 1979:2020
+sie_trend <- lm(formula = anomaly_sie ~ t)
+
+plot(1979:2020, anomaly_sie, type = 'b',
+     main = 'September Arctic Sea Ice Extent Anomaly',
+     xlab = 'Year',
+     ylab = 'Ice Extent (million km^2)',
+     col = "darkblue",
+     cex.lab = 1.2,
+     cex.axis = 1, 
+     font.lab = 1,
+     cex = 0.7,
+     pch = 16,
+     )+
+  
+  abline(sie_trend[["coefficients"]][["(Intercept)"]],sie_trend[["coefficients"]][["t"]], lty=6)+
+  #adds 1 sigma lines
+  abline(sie_trend[["coefficients"]][["(Intercept)"]]+anomaly_sd,sie_trend[["coefficients"]][["t"]], lty=6, col = 'darkgrey')+
+  abline(sie_trend[["coefficients"]][["(Intercept)"]]-anomaly_sd,sie_trend[["coefficients"]][["t"]], lty=6,col = 'darkgrey')+
+
+#adds 2 sigma lines
+  abline(sie_trend[["coefficients"]][["(Intercept)"]]+2*anomaly_sd,sie_trend[["coefficients"]][["t"]], lty=3,col = 'darkgrey')+
+  abline(sie_trend[["coefficients"]][["(Intercept)"]]-2*anomaly_sd,sie_trend[["coefficients"]][["t"]], lty=3,col = 'darkgrey')
+  
+legend('bottomleft', legend=c("trend", "1 stdev", "2 stdev"),col=c("black","darkgrey", "darkgrey"), lty=6:3, cex=0.8)
+
+```
+
+### Figure 4. Arctic September Sea Ice Extent Anomaly (%)
+
+```{r, echo = FALSE }
+percent_trend <- lm(formula = percent_anomaly ~ t)
+
+plot(1979:2020, percent_anomaly, type = 'b',
+     main = 'September Arctic Sea Ice Extent Anomaly',
+     xlab = 'Year',
+     ylab = 'Ice Extent Anomaly (%)',
+     col = "darkblue",
+     cex.lab = 1.2,
+     cex.axis = 1, 
+     font.lab = 1,
+     cex = 0.7,
+     pch = 16,
+     )+
+abline(percent_trend[["coefficients"]][["(Intercept)"]],percent_trend[["coefficients"]][["t"]])
+
+#abline(linregmod, col = "red", lty = 2) #add linear trendline
+
+```
+
+### Figure 5. Monthly Sea Ice Extent with Moving Mean
+Region: Complete Arctic
+Measure: Monthly Sea Ice Extent with Moving Mean
+
+```{r, echo = FALSE }
+#Finding the moving mean
+
+mov_sie <- runmean(total_sie,12)
+
+
+plot(1:504, total_sie/1e+06, type = 'l',
+     main = 'Arctic Sea Ice Extent',
+     xlab = 'Year',
+     ylab = 'Ice Area (million km^2)',
+     col = "darkblue",
+     cex.lab = 1.2,
+     cex.axis = 1, 
+     font.lab = 1,
+     cex = 0.7,
+     pch = 16,
+     )+lines(1:504,mov_sie/1e+06,type = 'l')
+
+```
+
+

@@ -1,0 +1,59 @@
+---
+title: "Newspapers_Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+#library(tidyverse)
+#library(stringr)
+#library(tm)
+
+a1 <- readLines("~/sesync_workshop/Newspapers/10,000 walrus come ashore in northwest Alaska;Large gathering is phenomenon related to loss of summe.txt", skipNul=TRUE)
+
+a_list <- list.files("~/sesync_workshop/Newspapers/", full.names = TRUE)
+loop <- lapply(a_list, readLines, skipNul = TRUE)
+
+new_corpus <- as.VCorpus(loop)
+
+article <- new_corpus[[1]]
+
+#newspapers <- VCorpus(DirSource("~/sesync_workshop/Newspapers", encoding = "utf-16"))
+#article <- newspapers[[2]]
+
+#get_to <- function(article) {
+#  body <- content(article)
+#  match <- str_detect(body, '^Body')
+#  if (any(match)) {
+#    to_start <- which(match)[[1]]
+#    match <- str_detect(body, '^Graphic')
+#    to_end <- which(match)[[1]] - 1
+#    to <- paste(body[to_start:to_end], collapse #= '')
+#    to <- str_extract_all(to, '\\b\\')
+#    return(unlist(to))
+#  } else {
+#    return(NA)
+#  }
+#}
