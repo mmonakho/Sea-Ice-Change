@@ -7,7 +7,7 @@
 # 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
-# ---- SECTION 1: IMPORT LIRBARIES, DEFINE FILE PATHS & FUNCTIONS ----
+# ---- SECTION 1: IMPORT LIBRARIES, DEFINE FILE PATHS & FUNCTIONS ----
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
