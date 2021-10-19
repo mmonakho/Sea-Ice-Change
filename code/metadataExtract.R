@@ -1,5 +1,5 @@
 # 
-# code: Initial word counts
+# code: Metadata extract & corpus development
 # 
 # author: Kelly Claborn, clabornkelly@gmail.com
 # date: October 2021
@@ -11,6 +11,9 @@
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
+
+
+pacman::p_load(dplyr)
 
 
 # List files from Alaska Dispatch News (ADN) to be included in corpus (n = 1429)
