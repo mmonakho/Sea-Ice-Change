@@ -12,6 +12,7 @@
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+source('code/metadataExtract.R')
 
 # ---- 1.1 Set options and load packages ----
 
