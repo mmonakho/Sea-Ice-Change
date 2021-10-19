@@ -44,3 +44,17 @@ newspapers_words <- newspapers_split %>%
   dplyr::rename(word1 = words) %>%
   dplyr::mutate(word2 = c(word1[2:length(word1)], NA)) %>%
   na.omit()
+
+# inspect the frequency of each bigram
+newspapers2grams <- newspapers_words %>%
+  dplyr::mutate(bigram = paste(word1, word2, sep = " ")) %>%
+  dplyr::group_by(bigram) %>%
+  dplyr::summarise(frequency = n()) %>%
+  dplyr::arrange(-frequency)
+
+# clean bigram table
+
+stps <- paste0(tm::stopwords(kind = "en"), collapse = "\\b|\\b")
+
+newspapers2grams_clean <- newspapers2grams %>%
+  dplyr::filter(!str_detect(bigram, stps))
