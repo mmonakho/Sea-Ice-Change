@@ -14,9 +14,12 @@
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
 
+pacman::p_load(ggplot2)
+citation("quanteda")
+
 # ---- Source metadataExtract.R ----
 
-source('code/metaDataExtract.R')
+source('code/metadataExtract.R')
 
 
 # ---- Tokenize corpus ----
@@ -41,7 +44,40 @@ pacman::p_load(ggplot2)
 
 num_docs_plot <- 
   ggplot(ADN, aes(x = year)) +
-  geom_hist()
+  geom_histogram(stat = "count", fill = "#332288") +
+  scale_x_discrete(name = "",
+                   breaks = seq(1995, 2021, by = 3)) +
+  scale_y_continuous(name = "", 
+                     expand = c(0,0),
+                     limits = c(0, 160)) +
+  labs(title = "Number documents containing 'sea ice', per year",
+       subtitle = "Alaska Dispatch News") +
+  theme(plot.title = element_text(size = rel(1),
+                                  colour = "#303030",
+                                  face = "bold"),
+        plot.subtitle = element_text(size = rel(0.75),
+                                     colour = "#303030", 
+                                     face = "italic"),
+        axis.ticks.x = element_line(colour = "#C0C0C0"),
+        axis.ticks.y = element_blank(),
+        panel.background = element_rect(fill = "white",
+                                        colour = "#909090"),
+        panel.border = element_rect(fill = NA,
+                                    size = 0.25,
+                                    colour = "#C0C0C0"),
+        panel.grid.major.y = element_line(colour = "#C0C0C0",
+                                          size = 0.35,
+                                          linetype = 3),
+        panel.grid.major.x = element_blank(),
+        plot.margin = margin(t = 5, r = 20, b = 5, l = 5, unit = "pt"),
+        axis.title = element_text(size = rel(0.9),
+                                  angle = 0,
+                                  face = "bold",
+                                  colour = "#303030"),
+        axis.text = element_text(size = rel(0.9),
+                                 angle = 0,
+                                 colour = "#303030",
+                                 lineheight = 0.7))
 
 
 # 
@@ -90,14 +126,15 @@ head(ADN_bigrams, 25)
 
 # ---- 4.2 Find bi-grams per year ----
 
-year_groups <- list("1995-1999" = c("1995", "1996", "1997", "1998", "1999"),
-                    "2000-2004" = c("2000", "2001", "2002", "2003", "2004"))
+year_groups <- list("1995-1997" = c("1995", "1996", "1997"),
+                    "1998-2000" = c("1998", "1999", "2000"),
+                    "2001-2003" = c("2001", "2002", "2003"))
 
 sort(unique(ADNcorpus$year))
 
 for(i in names(year_groups)) {
   subset_corpus <- 
-    quanteda::corpus(ADN %>% filter(year%in%year_groups[i][1])) 
+    quanteda::corpus(ADN %>% filter(year%in%year_groups[i][[1]])) 
   
   token_subset <- 
     subset_corpus %>%
@@ -122,4 +159,4 @@ for(i in list_bigram_df[-1]) {
   bigrams_byyear <- full_join(bigrams_byyear, get(i), by = "collocation")
 }
 
-nrow(ADN %>% filter(year%in%year_groups[1][1]))
+nrow(ADN %>% filter(year%in%year_groups["1995-1997"][[1]]))
