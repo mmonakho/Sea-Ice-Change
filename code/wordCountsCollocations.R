@@ -14,8 +14,6 @@
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
 
-pacman::p_load(ggplot2)
-citation("quanteda")
 
 # ---- Source metadataExtract.R ----
 
@@ -38,8 +36,6 @@ ADNcorpus_tokens <- ADNcorpus %>%
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
-
-pacman::p_load(ggplot2)
 
 
 num_docs_plot <- 
@@ -115,22 +111,25 @@ counts_per_year <- aggregate(DTM_reduced, by = list(year = ADN$year), sum)
 
 # ---- 4.1 Find bi-grams and tri-grams across entire corpus ----
 
-ADN_bigrams <- textstat_collocations(ADNcorpus_tokens, size = 2, min_count = 25) %>%
-  filter(!grepl("anchorage daily|image link|reserve section|main pg|word|@card@", collocation))
+ADN_bigrams <- textstat_collocations(ADNcorpus_tokens, size = 2, min_count = 25)
 
-ADN_trigrams <- textstat_collocations(ADNcorpus_tokens, size = 3, min_count = 25) %>%
-  filter(!grepl("anchorage daily|image link|reserve section|main pg|word|@card@", collocation))
+ADN_trigrams <- textstat_collocations(ADNcorpus_tokens, size = 3, min_count = 25)
 
-head(ADN_bigrams, 25)
+
 
 
 # ---- 4.2 Find bi-grams per year ----
 
 year_groups <- list("1995-1997" = c("1995", "1996", "1997"),
                     "1998-2000" = c("1998", "1999", "2000"),
-                    "2001-2003" = c("2001", "2002", "2003"))
+                    "2001-2003" = c("2001", "2002", "2003"),
+                    "2004-2006" = c("2004", "2005", "2006"),
+                    "2007-2009" = c("2007", "2008", "2009"),
+                    "2010-2012" = c("2010", "2011", "2012"),
+                    "2013-2015" = c("2013", "2014", "2015"),
+                    "2016-2018" = c("2016", "2017", "2018"),
+                    "2019-2021" = c("2019", "2020", "2021"))
 
-sort(unique(ADNcorpus$year))
 
 for(i in names(year_groups)) {
   subset_corpus <- 
@@ -143,20 +142,18 @@ for(i in names(year_groups)) {
     tokens_replace(lemma_data$inflected_form, lemma_data$lemma, valuetype = "fixed") %>% 
     tokens_remove(pattern = stopwords_extended, padding = TRUE)
   
-  newcols <- paste0(c("count", "lambda", "z"), i, sep = "_")
+  newcols <- paste0(c("count_", "lambda_", "z_"), i, sep = "")
 
   assign(paste("bigrams_", i, sep = ""),
-         textstat_collocations(token_subset, size = 2, min_count = 10) %>%
-           filter(!grepl("anchorage daily|image link|reserve section|main pg|word|@card@", collocation)) %>%
+         textstat_collocations(token_subset, size = 2, min_count = 3) %>%
            rename_with(~ paste0(., "_", i, sep = ""), !starts_with("collocation")))
     
 }
 
-list_bigram_df <- paste0("bigrams_", sort(unique(ADNcorpus$year)), sep = "")
-bigrams_byyear <- bigrams_1995
+list_bigram_df <- paste0("bigrams_", names(year_groups), sep = "")
+bigrams_byperiod <- `bigrams_1995-1997`
 
 for(i in list_bigram_df[-1]) {
-  bigrams_byyear <- full_join(bigrams_byyear, get(i), by = "collocation")
+  bigrams_byperiod <- full_join(bigrams_byperiod, get(i), by = "collocation")
 }
 
-nrow(ADN %>% filter(year%in%year_groups["1995-1997"][[1]]))

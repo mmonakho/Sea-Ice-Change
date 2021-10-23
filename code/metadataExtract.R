@@ -13,7 +13,7 @@
 #
 
 
-pacman::p_load(dplyr, quanteda)
+pacman::p_load(dplyr, quanteda, quanteda.textstats, ggplot2)
 
 
 # List files from Alaska Dispatch News (ADN) to be included in corpus (n = 1429)
@@ -22,7 +22,7 @@ ADNfiles <-
 
 # Create empty data frame to append full text and metadata to
 ADN <- data.frame(docid = NA,
-                  fullstring = NA,
+                  text = NA,
                   title = NA,
                   year = NA)
 
@@ -57,7 +57,7 @@ for(i in 1:length(ADNfiles)) {
   clean <- paste(title, aftertitle)
   
   output <- data.frame(docid = i,
-                       fullstring = clean,
+                       text = clean,
                        title = title, 
                        year = year)
   
