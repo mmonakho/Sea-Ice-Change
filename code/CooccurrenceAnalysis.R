@@ -20,19 +20,19 @@ pacman::p_load(tidyverse, quanteda)
 
 # ---- 1.2 Define file paths for pre-processed PDFs ----
 
-ADN <- read.csv("data/corpus/pre-processed/AlaskaDispatchNews_1/", sep = "",
-                encoding = "UTF-8")
+source('code/metadataExtract.R')
 
 
-corp <- Corpus(ADN$text, docnames = ADN$doc_id, 
-               docvars = data.frame(year = substr(ADN$date, 0, 1000)))
+corp <- corpus(ADN$text, 
+               docnames = ADN$doc_id, 
+               docvars = data.frame(year = substr(ADN$date, 0, 4)))
 
 
 
 # ---- 2 sentence detection----
 
 # original corpus length and its first document
-ndoc(sotu_corpus)
+ndoc(corp)
 
 substr(texts(corp)[1], 0, 200)
 
@@ -119,7 +119,7 @@ print(resultOverView)
 # ---- 5 Visualization of co-occurance ----
 
 #Read in the source code for the co-occurrence calculation
-source("calculateCoocStatistics.R")
+source('code/metadataExtract.R')
 
 #Definition of a parameter for the representation of the co-occurances
 numberofCoocs <- 15
