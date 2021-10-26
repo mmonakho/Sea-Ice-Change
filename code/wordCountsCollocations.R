@@ -18,6 +18,7 @@
 # ---- Source metadataExtract.R ----
 
 source('code/metadataExtract.R')
+source('code/plotThemes.R')
 
 
 # ---- Tokenize corpus ----
@@ -48,32 +49,8 @@ num_docs_plot <-
                      limits = c(0, 160)) +
   labs(title = "Number documents containing 'sea ice', per year",
        subtitle = "Alaska Dispatch News") +
-  theme(plot.title = element_text(size = rel(1),
-                                  colour = "#303030",
-                                  face = "bold"),
-        plot.subtitle = element_text(size = rel(0.75),
-                                     colour = "#303030", 
-                                     face = "italic"),
-        axis.ticks.x = element_line(colour = "#C0C0C0"),
-        axis.ticks.y = element_blank(),
-        panel.background = element_rect(fill = "white",
-                                        colour = "#909090"),
-        panel.border = element_rect(fill = NA,
-                                    size = 0.25,
-                                    colour = "#C0C0C0"),
-        panel.grid.major.y = element_line(colour = "#C0C0C0",
-                                          size = 0.35,
-                                          linetype = 3),
-        panel.grid.major.x = element_blank(),
-        plot.margin = margin(t = 5, r = 20, b = 5, l = 5, unit = "pt"),
-        axis.title = element_text(size = rel(0.9),
-                                  angle = 0,
-                                  face = "bold",
-                                  colour = "#303030"),
-        axis.text = element_text(size = rel(0.9),
-                                 angle = 0,
-                                 colour = "#303030",
-                                 lineheight = 0.7))
+  seaice.plot.theme
+
 
 
 # 
@@ -116,10 +93,13 @@ ADN_bigrams <- textstat_collocations(ADNcorpus_tokens, size = 2, min_count = 25)
 ADN_trigrams <- textstat_collocations(ADNcorpus_tokens, size = 3, min_count = 25)
 
 
+# Subset a list of most frequent bigrams across entire corpus
+ADN_bigrams_mostfrequent <- head(ADN_bigrams, 5)
 
 
 # ---- 4.2 Find bi-grams per year ----
 
+# Identify year groups to cluster data by
 year_groups <- list("1995-1997" = c("1995", "1996", "1997"),
                     "1998-2000" = c("1998", "1999", "2000"),
                     "2001-2003" = c("2001", "2002", "2003"),
@@ -130,7 +110,7 @@ year_groups <- list("1995-1997" = c("1995", "1996", "1997"),
                     "2016-2018" = c("2016", "2017", "2018"),
                     "2019-2021" = c("2019", "2020", "2021"))
 
-
+# Calculate bi-grams per year group
 for(i in names(year_groups)) {
   subset_corpus <- 
     quanteda::corpus(ADN %>% filter(year%in%year_groups[i][[1]])) 
@@ -141,8 +121,6 @@ for(i in names(year_groups)) {
     tokens_tolower() %>% 
     tokens_replace(lemma_data$inflected_form, lemma_data$lemma, valuetype = "fixed") %>% 
     tokens_remove(pattern = stopwords_extended, padding = TRUE)
-  
-  newcols <- paste0(c("count_", "lambda_", "z_"), i, sep = "")
 
   assign(paste("bigrams_", i, sep = ""),
          textstat_collocations(token_subset, size = 2, min_count = 3) %>%
@@ -150,6 +128,7 @@ for(i in names(year_groups)) {
     
 }
 
+# Join bi-grams together across all year groups
 list_bigram_df <- paste0("bigrams_", names(year_groups), sep = "")
 bigrams_byperiod <- `bigrams_1995-1997`
 
@@ -157,3 +136,48 @@ for(i in list_bigram_df[-1]) {
   bigrams_byperiod <- full_join(bigrams_byperiod, get(i), by = "collocation")
 }
 
+
+
+# Define a substringing function to pull XX number of digits from the right of a string
+substrRight <- function(x, n){
+  substr(x, nchar(x)-n+1, nchar(x))
+}
+
+
+# Wrangle top 10 bi-grams (across full corpus) by year period
+top5_bigrams_byperiod <- 
+  as.data.frame(bigrams_byperiod) %>% 
+  filter(collocation%in%ADN_bigrams_mostfrequent$collocation) %>%
+  select(-contains("count_nested") & -contains("length")) %>%
+  tidyr::pivot_longer(cols = `count_1995-1997`:`z_2019-2021`) %>%
+  mutate(period = substrRight(name, 9),
+         variable = sub("_.*", "\\1", name)) %>%
+  select(-name)
+
+  
+
+# 
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#
+# ---- SECTION 4: VISUALIZING BIGRAMS AND TRIGRAMS ----
+#
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#
+
+
+plot_bigrams_byyear <- 
+  ggplot(data = top5_bigrams_byperiod %>% filter(variable=="count")) +
+  geom_line(aes(x = period, y = value, 
+                group = collocation, color = collocation),
+            size = 1.5) +
+  scale_color_ptol(name = "Collocation\n(stemmed)") +
+  scale_y_continuous(name = "Count",
+                     expand = c(0,0),
+                     limits = c(-10, 1250)) +
+  scale_x_discrete(name = "",
+                   expand = c(0,0)) +
+  seaice.plot.theme +
+  theme(axis.text.x = element_text(angle = 330, 
+                                   vjust = 1,
+                                   hjust = 0))
+  
