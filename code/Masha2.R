@@ -28,7 +28,7 @@ ADN <- ADN[sel_idx, ]
 
 require(topicmodels)
 # number of topics
-K <- 20
+K <- 10
 # compute the LDA model, inference via n iterations of Gibbs sampling
 topicModel <- LDA(DTM, K, method="Gibbs", control=list(iter = 500, seed = 1, verbose = 25))
 
