@@ -24,14 +24,10 @@ ADN <- read.csv("data/corpus/pre-processed/AlaskaDispatchNews_1/", sep = "",
                 encoding = "UTF-8")
 
 
-#articles <- paste('data/corpus/pre-processed/AlaskaDispatchNews_1/', 
-#                  list.files('data/corpus/pre-processed/AlaskaDispatchNews_1'),
-#                  sep = "")
-
 corp <- Corpus(ADN$text, docnames = ADN$doc_id, 
                docvars = data.frame(year = substr(ADN$date, 0, 1000)))
 
-#corp <- tm_map(corp, removePunctuation, ucp = TRUE)
+
 
 # ---- 2 sentence detection----
 
@@ -66,7 +62,7 @@ corpus_tokens <- corpus_sentences %>%
 ADN_collocations <- textstat_collocations(corpus_tokens, min_count = 25)
 ADN_collocations <- sotu_collocations[1:250, ]
 
-corpus_tokens <- tokens_compound(corpus_tokens, sotu_collocations)
+corpus_tokens <- tokens_compound(corpus_tokens, ADN_collocations)
 
 minimumFrequency <- 10
 
@@ -115,14 +111,31 @@ resultOverView <- data.frame(
   names(dicesig[1:10]), dicesig[1:10], 
   names(logsig[1:10]), logsig[1:10],
   row.names = NULL)
-colnames(resultOverView) <- c("Freq-terms", "Freq", "MI-terms", "MI", "Dice-Terms", "Dice", "LL-Terms", "LL")
+colnames(resultOverView) <- c("Freq-terms", "Freq", "MI-terms", "MI", 
+                              "Dice-Terms", "Dice", "LL-Terms", "LL")
 print(resultOverView)
 
 
 # ---- 5 Visualization of co-occurance ----
-resultGraph <- data.frame(from = character(), to = character(), sig = numeric(0))
 
-# The structure of the temporary graph object is equal to that of the resultGraph
+#Read in the source code for the co-occurrence calculation
+source("calculateCoocStatistics.R")
+
+#Definition of a parameter for the representation of the co-occurances
+numberofCoocs <- 15
+
+#Determination of the term of which co-competitors are to be measured 
+coocTerm <- "change"
+
+coocs <- calculateCoocStatistics(coocTerm, binDTM, measure="LOGLIK")
+
+# Display the numberOfCoocs main terms
+print(coocs[1:numberOfCoocs])
+
+resultGraph <- data.frame(from = character(), to = character(), 
+                          sig = numeric(0))
+
+# Structure of the temporary graph object is equal to that of the resultGraph
 tmpGraph <- data.frame(from = character(), to = character(), sig = numeric(0))
 
 # Fill the data.frame to produce the correct number of lines
@@ -137,7 +150,7 @@ tmpGraph[, 3] <- coocs[1:numberOfCoocs]
 # Attach the triples to resultGraph
 resultGraph <- rbind(resultGraph, tmpGraph)
 
-# Iteration over the most significant numberOfCoocs co-occurrences of the search term
+# Iteration over the most significant numberOfCoocs co-occurrences search term
 for (i in 1:numberOfCoocs){
   
   # Calling up the co-occurrence calculation for term i from the search words co-occurrences
