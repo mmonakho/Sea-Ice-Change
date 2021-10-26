@@ -23,26 +23,20 @@ pacman::p_load(tidyverse, quanteda)
 source('code/metadataExtract.R')
 
 
-corp <- corpus(ADN$text, 
-               docnames = ADN$doc_id, 
-               docvars = data.frame(year = substr(ADN$date, 0, 4)))
-
-
-
 # ---- 2 sentence detection----
 
 # original corpus length and its first document
-ndoc(corp)
+ndoc(ADNcorpus)
 
-substr(texts(corp)[1], 0, 200)
+substr(texts(ADNcorpus)[1], 0, 200)
 
-corpus_sentences <- corpus_reshape(corp, to = "sentences")
+ADNcorpus_sentences <- corpus_reshape(ADNcorpus, to = "sentences")
 
-ndoc(corpus_sentences)
+ndoc(ADNcorpus_sentences)
 
-texts(corpus_sentences)[1]
+texts(ADNcorpus_sentences)[1]
 
-texts(corpus_sentences)[2]
+texts(ADNcorpus_sentences)[2]
 
 
 # Build a dictionary of lemmas
@@ -60,7 +54,7 @@ corpus_tokens <- corpus_sentences %>%
 
 # calculate multi-word unit candidates
 ADN_collocations <- textstat_collocations(corpus_tokens, min_count = 25)
-ADN_collocations <- sotu_collocations[1:250, ]
+ADN_collocations <- ADN_collocations[1:250, ]
 
 corpus_tokens <- tokens_compound(corpus_tokens, ADN_collocations)
 
