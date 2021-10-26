@@ -138,13 +138,24 @@ for(i in list_bigram_df[-1]) {
 
 
 
-# Define a substringing function to pull XX number of digits from the right of a string
+# Define a substring function to pull XX number of digits from the right of a string
 substrRight <- function(x, n){
   substr(x, nchar(x)-n+1, nchar(x))
 }
 
+# Number of docs per year period from ADN corpus
+ADN <- ADN %>% mutate(period = NA)
 
-# Wrangle top 10 bi-grams (across full corpus) by year period
+for(i in names(year_groups)) {
+  ADN <- ADN %>%
+  mutate(period = ifelse(year%in%year_groups[i][[1]], i, period)) 
+}
+
+ADN_ndocs_byperiod <- ADN %>%
+  group_by(period) %>%
+  summarise(ndocs = length(docid))
+
+# Wrangle top 5 bi-grams (across full corpus) by year period
 top5_bigrams_byperiod <- 
   as.data.frame(bigrams_byperiod) %>% 
   filter(collocation%in%ADN_bigrams_mostfrequent$collocation) %>%
@@ -152,7 +163,9 @@ top5_bigrams_byperiod <-
   tidyr::pivot_longer(cols = `count_1995-1997`:`z_2019-2021`) %>%
   mutate(period = substrRight(name, 9),
          variable = sub("_.*", "\\1", name)) %>%
-  select(-name)
+  select(-name) %>%
+  left_join(ADN_ndocs_byperiod, by = "period") %>%
+  mutate(value_scaled = value / ndocs)
 
   
 
@@ -167,13 +180,12 @@ top5_bigrams_byperiod <-
 
 plot_bigrams_byyear <- 
   ggplot(data = top5_bigrams_byperiod %>% filter(variable=="count")) +
-  geom_line(aes(x = period, y = value, 
+  geom_line(aes(x = period, y = value_scaled, 
                 group = collocation, color = collocation),
             size = 1.5) +
   scale_color_ptol(name = "Collocation\n(stemmed)") +
-  scale_y_continuous(name = "Count",
-                     expand = c(0,0),
-                     limits = c(-10, 1250)) +
+  scale_y_continuous(name = "Count / number documents",
+                     expand = c(0,0)) +
   scale_x_discrete(name = "",
                    expand = c(0,0)) +
   seaice.plot.theme +
