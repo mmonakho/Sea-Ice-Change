@@ -14,7 +14,7 @@
 
 options(stringsAsFactors = FALSE)
 
-pacman::p_load(topicmodels, quanteda, quanteda.textstats)
+pacman::p_load(topicmodels, quanteda, quanteda.textstats, wordcloud2)
 source('code/metadataExtract.R')
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -55,3 +55,25 @@ K <- 15
 topicModel <- LDA(DTM, K, method="Gibbs", control=list(iter = 500, seed = 1, verbose = 25))
 
 terms(topicModel, 10)
+
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#
+# ---- SECTION 2: DATA VISUALIZATION ----
+#
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+# ---- 1.1 Create a word cloud ----
+
+top5termsPerTopic <- terms(topicModel, 5)
+topicNames <- apply(top5termsPerTopic, 2, paste, collapse=" ")
+
+topicToViz <- 11 # change for your own topic of interest
+topicToViz <- grep('ice', topicNames)[1] # Or select a topic by a term contained in its name
+# select to 40 most probable terms from the topic by sorting the term-topic-probability vector in decreasing order
+tmResult <- posterior(topicModel)
+top40terms <- sort(tmResult$terms[topicToViz,], decreasing=TRUE)[1:40]
+words <- names(top40terms)
+# extract the probabilities of each of the 40 terms
+probabilities <- sort(tmResult$terms[topicToViz,], decreasing=TRUE)[1:40]
+# visualize the terms as wordcloud
+wordcloud2(data.frame(words, probabilities), shuffle = FALSE, size = 0.8)
