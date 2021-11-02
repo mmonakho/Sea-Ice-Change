@@ -20,7 +20,7 @@ pacman::p_load(tidyverse, quanteda)
 
 # ---- 1.2 Define file paths for pre-processed PDFs ----
 
-source("code/metadataExtract.R")
+source('code/metadataExtract.R')
 
 
 corp <- Corpus(ADN$text, docnames = ADN$doc_id, 
