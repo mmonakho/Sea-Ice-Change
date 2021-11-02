@@ -30,6 +30,19 @@ ADNcorpus_tokens <- ADNcorpus %>%
   tokens_remove(pattern = stopwords_extended, padding = TRUE)
 
 
+# ---- Identify year groups to cluster data by ----
+
+year_groups <- list("1995-1997" = c("1995", "1996", "1997"),
+                    "1998-2000" = c("1998", "1999", "2000"),
+                    "2001-2003" = c("2001", "2002", "2003"),
+                    "2004-2006" = c("2004", "2005", "2006"),
+                    "2007-2009" = c("2007", "2008", "2009"),
+                    "2010-2012" = c("2010", "2011", "2012"),
+                    "2013-2015" = c("2013", "2014", "2015"),
+                    "2016-2018" = c("2016", "2017", "2018"),
+                    "2019-2021" = c("2019", "2020", "2021"))
+
+
 # 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
@@ -38,7 +51,20 @@ ADNcorpus_tokens <- ADNcorpus %>%
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
 
+# Number of docs per year period from ADN corpus
+ADN <- ADN %>% mutate(period = NA)
 
+for(i in names(year_groups)) {
+  ADN <- ADN %>%
+    mutate(period = ifelse(year%in%year_groups[i][[1]], i, period)) 
+}
+
+ADN_ndocs_byperiod <- ADN %>%
+  group_by(period) %>%
+  summarise(ndocs = length(docid))
+
+
+# Number docs per year
 num_docs_plot <- 
   ggplot(ADN, aes(x = year)) +
   geom_histogram(stat = "count", fill = "#332288") +
@@ -50,6 +76,21 @@ num_docs_plot <-
   labs(title = "Number documents containing 'sea ice', per year",
        subtitle = "Alaska Dispatch News") +
   seaice.plot.theme
+
+
+# Number docs per year period
+num_docs_byperiod_plot <- 
+  ggplot(ADN, aes(x = period)) +
+  geom_histogram(stat = "count", fill = "#332288") +
+  scale_x_discrete(name = "") +
+  scale_y_continuous(name = "", 
+                     expand = c(0,0)) +
+  labs(title = "Number documents containing 'sea ice', per 3-year period",
+       subtitle = "Alaska Dispatch News") +
+  seaice.plot.theme +
+  theme(axis.text.x = element_text(angle = 330, 
+                                   vjust = 1,
+                                   hjust = 0))
 
 
 
@@ -99,17 +140,6 @@ ADN_bigrams_mostfrequent <- head(ADN_bigrams, 5)
 
 # ---- 4.2 Find bi-grams per year ----
 
-# Identify year groups to cluster data by
-year_groups <- list("1995-1997" = c("1995", "1996", "1997"),
-                    "1998-2000" = c("1998", "1999", "2000"),
-                    "2001-2003" = c("2001", "2002", "2003"),
-                    "2004-2006" = c("2004", "2005", "2006"),
-                    "2007-2009" = c("2007", "2008", "2009"),
-                    "2010-2012" = c("2010", "2011", "2012"),
-                    "2013-2015" = c("2013", "2014", "2015"),
-                    "2016-2018" = c("2016", "2017", "2018"),
-                    "2019-2021" = c("2019", "2020", "2021"))
-
 # Calculate bi-grams per year group
 for(i in names(year_groups)) {
   subset_corpus <- 
@@ -143,17 +173,6 @@ substrRight <- function(x, n){
   substr(x, nchar(x)-n+1, nchar(x))
 }
 
-# Number of docs per year period from ADN corpus
-ADN <- ADN %>% mutate(period = NA)
-
-for(i in names(year_groups)) {
-  ADN <- ADN %>%
-  mutate(period = ifelse(year%in%year_groups[i][[1]], i, period)) 
-}
-
-ADN_ndocs_byperiod <- ADN %>%
-  group_by(period) %>%
-  summarise(ndocs = length(docid))
 
 # Wrangle top 5 bi-grams (across full corpus) by year period
 top5_bigrams_byperiod <- 

@@ -20,25 +20,35 @@ pacman::p_load(tidyverse, quanteda)
 
 # ---- 1.2 Define file paths for pre-processed PDFs ----
 
-source("code/metadataExtract.R")
+source('code/metadataExtract.R')
+
+
+corp <- Corpus(ADN$text, docnames = ADN$doc_id, 
+               docvars = data.frame(year = substr(ADN$date, 0, 1000)))
+
 
 
 # ---- 2 sentence detection----
 
 # original corpus length and its first document
-ndoc(ADNcorpus)
+ndoc(corp)
+
+substr(texts(corp)[1], 0, 200)
+
+corpus_sentences <- corpus_reshape(corp, to = "sentences")
+
+ndoc(corpus_sentences)
+
+texts(corpus_sentences)[1]
+
+texts(corpus_sentences)[2]
 
 
-substr(texts(ADNcorpus)[1], 0, 200)
+# Build a dictionary of lemmas
+lemma_data <- read.csv("resources/baseform_en.tsv", encoding = "UTF-8")
 
-ADNcorpus_sentences <- corpus_reshape(ADNcorpus, to = "sentences")
-
-ndoc(ADNcorpus_sentences)
-
-texts(ADNcorpus_sentences)[1]
-
-texts(ADNcorpus_sentences)[2]
-
+# read an extended stop word list
+stopwords_extended <- readLines("resources/stopwords_en.txt", encoding = "UTF-8")
 
 # Preprocessing of the corpus of sentences
 corpus_tokens <- corpus_sentences %>% 
@@ -49,7 +59,7 @@ corpus_tokens <- corpus_sentences %>%
 
 # calculate multi-word unit candidates
 ADN_collocations <- textstat_collocations(corpus_tokens, min_count = 25)
-ADN_collocations <- ADN_collocations[1:250, ]
+ADN_collocations <- sotu_collocations[1:250, ]
 
 corpus_tokens <- tokens_compound(corpus_tokens, ADN_collocations)
 

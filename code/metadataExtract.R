@@ -13,7 +13,7 @@
 #
 
 
-pacman::p_load(dplyr, quanteda, quanteda.textstats, ggthemes, ggplot2)
+pacman::p_load(dplyr, quanteda, quanteda.textstats, ggthemes, grid, gridExtra, ggplot2)
 
 
 # List files from Alaska Dispatch News (ADN) to be included in corpus (n = 1429)
