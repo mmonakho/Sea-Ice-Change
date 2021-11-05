@@ -22,13 +22,18 @@ pacman::p_load(tidyverse, quanteda)
 
 # ---- 1.2 Source metadataExtract.R for post-processed corpus ----
 
-source('code/metadataExtract.R')
+source("code/metadataExtract.R")
 
 
 # ---- 1.3 Source functions for significance tests ----
 
 source('code/functions/calculateCoocStatistics.R')
 
+<<<<<<< HEAD
+=======
+
+substr(texts(ADNcorpus)[1], 0, 200)
+>>>>>>> 8a739b572b4c4733ea85179b4724f7722d5c2d9c
 
 # 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
