@@ -35,7 +35,7 @@ corpus_tokens <- ADNcorpus %>%
 ADNcollocations <- textstat_collocations(corpus_tokens, min_count = 25)
 ADNcollocations <- ADNcollocations[1:250]
 
-corpus_tokens <- tokens_compound(corpus_tokens, sotu_collocations)
+corpus_tokens <- tokens_compound(corpus_tokens, ADNcollocations)
 
 # ---- 1.2 Remove terms which occur in less than 1% of all documents
 DTM <- corpus_tokens %>% 
@@ -106,7 +106,7 @@ ggplot(data = vizDataFrame, aes(topic, value, fill = document), ylab = "proporti
 # (higher alpha results in an even distribution of topics within
 # a document)
 
-topicModel2 <- ADN(DTM, K, method="Gibbs", control=list(iter = 500, verbose = 25, seed = 1, alpha = 0.2))
+topicModel2 <- LDA(DTM, K, method="Gibbs", control=list(iter = 500, verbose = 25, seed = 1, alpha = 0.2))
 tmResult <- posterior(topicModel2)
 theta <- tmResult$topics
 beta <- tmResult$terms
