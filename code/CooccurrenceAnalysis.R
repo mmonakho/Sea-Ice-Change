@@ -29,11 +29,6 @@ source("code/metadataExtract.R")
 
 source('code/functions/calculateCoocStatistics.R')
 
-<<<<<<< HEAD
-=======
-
-substr(texts(ADNcorpus)[1], 0, 200)
->>>>>>> 8a739b572b4c4733ea85179b4724f7722d5c2d9c
 
 # 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -478,3 +473,10 @@ visualizeByPeriod(dat = resultGraph_pd2, cooc = "sea ice", titleTerm = "Sea Ice"
 
 # Years 2013 - 2021
 visualizeByPeriod(dat = resultGraph_pd3, cooc = "sea ice", titleTerm = "Sea Ice")
+
+
+# Without single degree edges
+visualizeByPeriod(dat = resultGraph, removeDegreeOne = TRUE, cooc = "sea ice", titleTerm = "Sea Ice")
+visualizeByPeriod(dat = resultGraph_pd1, removeDegreeOne = TRUE, cooc = "sea ice", titleTerm = "Sea Ice")
+visualizeByPeriod(dat = resultGraph_pd2, removeDegreeOne = TRUE, cooc = "sea ice", titleTerm = "Sea Ice")
+visualizeByPeriod(dat = resultGraph_pd3, removeDegreeOne = TRUE, cooc = "sea ice", titleTerm = "Sea Ice")
