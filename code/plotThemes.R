@@ -14,10 +14,10 @@
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
 
-seaice.plot.theme <- theme(plot.title = element_text(size = rel(1),
+seaice.plot.theme <- theme(plot.title = element_text(size = 16,
                                                      colour = "#303030",
                                                      face = "bold"),
-                           plot.subtitle = element_text(size = rel(0.75),
+                           plot.subtitle = element_text(size = 13,
                                                         colour = "#303030", 
                                                         face = "italic"),
                            axis.ticks.x = element_line(colour = "#C0C0C0"),
@@ -32,11 +32,11 @@ seaice.plot.theme <- theme(plot.title = element_text(size = rel(1),
                                                              linetype = 3),
                            panel.grid.major.x = element_blank(),
                            plot.margin = margin(t = 5, r = 20, b = 5, l = 5, unit = "pt"),
-                           axis.title = element_text(size = rel(0.9),
+                           axis.title = element_text(size = 13,
                                                      angle = 0,
                                                      face = "bold",
                                                      colour = "#303030"),
-                           axis.text = element_text(size = rel(0.9),
+                           axis.text = element_text(size = 13,
                                                     angle = 0,
                                                     colour = "#303030",
                                                     lineheight = 0.7))
