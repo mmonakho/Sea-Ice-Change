@@ -222,7 +222,7 @@ wordcloud2(data.frame(words_pd3, probabilities_pd3), shuffle = FALSE, size = 0.8
 
 # ---- 4.1 Visualize the topic distributions within the documents ----
 
-exampleIds_pd1 <- c(2, 100, 200)
+exampleIds <- c(2, 100, 200)
 cat(ADNcorpus_pd1)
 cat(ADNcorpus_pd2)
 cat(ADNcorpus_pd3)
@@ -234,7 +234,7 @@ N <- length(exampleIds)
 # get topic proportions form example documents
 topicProportionExamples <- theta[exampleIds,]
 colnames(topicProportionExamples) <- topicNames
-vizDataFrame <- melt(cbind(data.frame(topicProportionExamples), document = factor(1:N)), variable.name = "topic", id.vars = "period")  
+vizDataFrame <- melt(cbind(data.frame(topicProportionExamples), document = factor(1:N)), variable.name = "topic", id.vars = "document")  
 
 ggplot(data = vizDataFrame, aes(topic, value, fill = document), ylab = "proportion") + 
   geom_bar(stat="identity") +
@@ -246,29 +246,33 @@ ggplot(data = vizDataFrame, aes(topic, value, fill = document), ylab = "proporti
 # (higher alpha results in an even distribution of topics within
 # a document)
 
-topicModel2_pd1 <- ADN(DTM_pd1, K, method="Gibbs", control=list(iter = 500, verbose = 25, seed = 1, alpha = 0.2))
-tmResult_pd1 <- posterior(topicModel2_pd1)
-theta_pd1 <- tmResult_pd1$topics
-beta_pd1 <- tmResult_pd1$terms
-topicNames_pd1 <- apply(terms(topicModel2_pd1, 5), 2, paste, collapse = " ")  # reset topicnames
-topicProportionExamples_pd1 <- theta[exampleIds_pd1,]
-colnames(topicProportionExamples_pd1) <- topicNames_pd1
-vizDataFrame_pd1 <- melt(cbind(data.frame(topicProportionExamples_pd1), 
+topicModel2 <- LDA(DTM, K, method="Gibbs", control=list(iter = 500, verbose = 25, seed = 1, alpha = 0.2))
+tmResult <- posterior(topicModel2)
+theta <- tmResult$topics
+beta <- tmResult$terms
+topicNames <- apply(terms(topicModel2, 5), 2, paste, collapse = " ")  # reset topic names
+topicProportionExamples <- theta[exampleIds,]
+colnames(topicProportionExamples) <- topicNames
+vizDataFrame <- melt(cbind(data.frame(topicProportionExamples), 
                            document = factor(1:N)), variable.name = "topic", id.vars = "document")  
 
-ggplot(data = vizDataFrame_pd1, aes(topic, value, fill = document), ylab = "proportion") + 
+ggplot(data = vizDataFrame, aes(topic, value, fill = document), ylab = "proportion") + 
   geom_bar(stat="identity") +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +  
   coord_flip() +
   facet_wrap(~ document, ncol = N)
 
 
-# ---- 2.7 Rank topics and sort them based on their probability within the corpus ----
 
-topicNames_pd1 <- apply(lda::top.topic.words(beta, 5, by.score = T), 2, paste, collapse = " ")
-topicProportions_pd1 <- colSums(theta_pd1) / nrow(DTM_pd1)  # mean probabilities over all paragraphs
-names(topicProportions_pd1) <- topicNames_pd1     # assign the topic names we created before
-sort(topicProportions_pd1, decreasing = TRUE) # show summed proportions in decreased order
+#still needs work
+
+
+# ---- 4.2 Rank topics and sort them based on their probability within the corpus ----
+
+topicNames <- apply(lda::top.topic.words(beta, 5, by.score = T), 2, paste, collapse = " ")
+topicProportions <- colSums(theta) / nrow(DTM)  # mean probabilities over all paragraphs
+names(topicProportions) <- topicNames     # assign the topic names we created before
+sort(topicProportions, decreasing = TRUE) # show summed proportions in decreased order
 
 
 # ---- 2.8 Visualize topics in the data over time ----
