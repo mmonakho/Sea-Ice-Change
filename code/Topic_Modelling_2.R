@@ -27,8 +27,8 @@ source('code/metadataExtract.R')
 # ---- 1.1 Create DTM ----
 
 ADN_pd1 <- ADN %>%
-  mutate(text = stringr::str_replace_all(text, stringr::regex("sea ice", ignore_case = T), "sea-ice"),
-         text = stringr::str_replace_all(text, stringr::regex("climate change", ignore_case = T), "climate-change")) %>%
+  # mutate(text = stringr::str_replace_all(text, stringr::regex("sea ice", ignore_case = T), "sea-ice"),
+  #        text = stringr::str_replace_all(text, stringr::regex("climate change", ignore_case = T), "climate-change")) %>%
   filter(year%in%c(1995:2003))
 
 ADNcorpus_pd1 <- corpus(ADN_pd1)
@@ -39,8 +39,8 @@ corpus_tokens_pd1 <- ADNcorpus_pd1 %>%
   tokens_replace(lemma_data$inflected_form, lemma_data$lemma, valuetype = "fixed") %>% 
   tokens_remove(pattern = stopwords_extended, padding = T)
 
-ADNcollocations_pd1 <- textstat_collocations(corpus_tokens_pd1, min_count = 25)
-ADNcollocations_pd1 <- ADNcollocations_pd1[1:250]
+ADNcollocations_pd1 <- textstat_collocations(corpus_tokens_pd1, min_count = 5)
+ADNcollocations_pd1 <- ADNcollocations_pd1[1:250,]
 
 corpus_tokens_pd1 <- tokens_compound(corpus_tokens_pd1, ADNcollocations_pd1)
 
@@ -52,18 +52,16 @@ DTM_pd1 <- corpus_tokens_pd1 %>%
   dfm_trim(min_docfreq = 0.01, max_docfreq = 1, docfreq_type = "prop")
 
 sel_idx_pd1 <- rowSums(DTM_pd1) > 0
-DTM_pd1 <- DTM_pd1[sel_idx, ]
-ADN_pd1 <- ADN_pd1[sel_idx, ]
+DTM_pd1 <- DTM_pd1[sel_idx_pd1, ]
+ADN_pd1 <- ADN_pd1[sel_idx_pd1, ]
 
-require(topicmodels)
 
 # ---- 1.3 Choose the number of topics
 
-K <- 15
+K <- 8
 
 # ---- 1.4 Compute the LDA model, inference via n iterations of Gibbs sampling
 topicModel_pd1 <- LDA(DTM_pd1, K, method="Gibbs", control=list(iter = 500, seed = 1, verbose = 25))
-
 terms(topicModel_pd1, 10)
 
 # ---- 1.5 Create a word cloud ----
@@ -71,14 +69,15 @@ terms(topicModel_pd1, 10)
 top5termsPerTopic_pd1 <- terms(topicModel_pd1, 5)
 topicNames_pd1 <- apply(top5termsPerTopic_pd1, 2, paste, collapse=" ")
 
-topicToViz_pd1 <- 2 # change for your own topic of interest
-topicToViz_pd1 <- grep('ice', topicNames_pd1)[1] # Or select a topic by a term contained in its name
+# Choose topic number (1-10)
+topicToViz_pd1 <- 1 # change for your own topic of interest
+
 # select to 40 most probable terms from the topic by sorting the term-topic-probability vector in decreasing order
 tmResult_pd1 <- posterior(topicModel_pd1)
-top40terms_pd1 <- sort(tmResult$terms[topicToViz_pd1,], decreasing=TRUE)[1:40]
+top40terms_pd1 <- sort(tmResult_pd1$terms[topicToViz_pd1,], decreasing=TRUE)[1:40]
 words_pd1 <- names(top40terms_pd1)
 # extract the probabilities of each of the 40 terms
-probabilities_pd1 <- sort(tmResult$terms[topicToViz_pd1,], decreasing=TRUE)[1:40]
+probabilities_pd1 <- sort(tmResult_pd1$terms[topicToViz_pd1,], decreasing=TRUE)[1:40]
 # visualize the terms as wordcloud
 wordcloud2(data.frame(words_pd1, probabilities_pd1), shuffle = FALSE, size = 0.8)
 
@@ -92,8 +91,6 @@ wordcloud2(data.frame(words_pd1, probabilities_pd1), shuffle = FALSE, size = 0.8
 # ---- 2.1 Create DTM ----
 
 ADN_pd2 <- ADN %>%
-  mutate(text = stringr::str_replace_all(text, stringr::regex("sea ice", ignore_case = T), "sea-ice"),
-         text = stringr::str_replace_all(text, stringr::regex("climate change", ignore_case = T), "climate-change")) %>%
   filter(year%in%c(2004:2012))
 
 ADNcorpus_pd2 <- corpus(ADN_pd2)
@@ -104,8 +101,8 @@ corpus_tokens_pd2 <- ADNcorpus_pd2 %>%
   tokens_replace(lemma_data$inflected_form, lemma_data$lemma, valuetype = "fixed") %>% 
   tokens_remove(pattern = stopwords_extended, padding = T)
 
-ADNcollocations_pd2 <- textstat_collocations(corpus_tokens_pd2, min_count = 25)
-ADNcollocations_pd2 <- ADNcollocations_pd2[1:250]
+ADNcollocations_pd2 <- textstat_collocations(corpus_tokens_pd2, min_count = 5)
+ADNcollocations_pd2 <- ADNcollocations_pd2[1:250, ]
 
 corpus_tokens_pd2 <- tokens_compound(corpus_tokens_pd2, ADNcollocations_pd2)
 
@@ -117,14 +114,13 @@ DTM_pd2 <- corpus_tokens_pd2 %>%
   dfm_trim(min_docfreq = 0.01, max_docfreq = 1, docfreq_type = "prop")
 
 sel_idx_pd2 <- rowSums(DTM_pd2) > 0
-DTM_pd2 <- DTM_pd2[sel_idx, ]
-ADN_pd2 <- ADN_pd2[sel_idx, ]
+DTM_pd2 <- DTM_pd2[sel_idx_pd2, ]
+ADN_pd2 <- ADN_pd2[sel_idx_pd2, ]
 
-require(topicmodels)
 
 # ---- 2.3 Choose the number of topics
 
-K <- 15
+K <- 8
 
 # ---- 2.4 Compute the LDA model, inference via n iterations of Gibbs sampling
 topicModel_pd2 <- LDA(DTM_pd2, K, method="Gibbs", control=list(iter = 500, seed = 1, verbose = 25))
@@ -136,14 +132,15 @@ terms(topicModel_pd2, 10)
 top5termsPerTopic_pd2 <- terms(topicModel_pd2, 5)
 topicNames_pd2 <- apply(top5termsPerTopic_pd2, 2, paste, collapse=" ")
 
+# Change to each topic number and re-run
 topicToViz_pd2 <- 2 # change for your own topic of interest
-topicToViz_pd2 <- grep('ice', topicNames_pd2)[1] # Or select a topic by a term contained in its name
+
 # select to 40 most probable terms from the topic by sorting the term-topic-probability vector in decreasing order
 tmResult_pd2 <- posterior(topicModel_pd2)
-top40terms_pd2 <- sort(tmResult$terms[topicToViz_pd2,], decreasing=TRUE)[1:40]
+top40terms_pd2 <- sort(tmResult_pd2$terms[topicToViz_pd2,], decreasing=TRUE)[1:40]
 words_pd2 <- names(top40terms_pd2)
 # extract the probabilities of each of the 40 terms
-probabilities_pd2 <- sort(tmResult$terms[topicToViz_pd2,], decreasing=TRUE)[1:40]
+probabilities_pd2 <- sort(tmResult_pd2$terms[topicToViz_pd2,], decreasing=TRUE)[1:40]
 # visualize the terms as wordcloud
 wordcloud2(data.frame(words_pd2, probabilities_pd2), shuffle = FALSE, size = 0.8)
 
@@ -157,8 +154,6 @@ wordcloud2(data.frame(words_pd2, probabilities_pd2), shuffle = FALSE, size = 0.8
 # ---- 3.1 Create DTM ----
 
 ADN_pd3 <- ADN %>%
-  mutate(text = stringr::str_replace_all(text, stringr::regex("sea ice", ignore_case = T), "sea-ice"),
-         text = stringr::str_replace_all(text, stringr::regex("climate change", ignore_case = T), "climate-change")) %>%
   filter(year%in%c(2013:2021))
 
 ADNcorpus_pd3 <- corpus(ADN_pd3)
@@ -169,8 +164,8 @@ corpus_tokens_pd3 <- ADNcorpus_pd3 %>%
   tokens_replace(lemma_data$inflected_form, lemma_data$lemma, valuetype = "fixed") %>% 
   tokens_remove(pattern = stopwords_extended, padding = T)
 
-ADNcollocations_pd3 <- textstat_collocations(corpus_tokens_pd3, min_count = 25)
-ADNcollocations_pd3 <- ADNcollocations_pd3[1:250]
+ADNcollocations_pd3 <- textstat_collocations(corpus_tokens_pd3, min_count = 5)
+ADNcollocations_pd3 <- ADNcollocations_pd3[1:250, ]
 
 corpus_tokens_pd3 <- tokens_compound(corpus_tokens_pd3, ADNcollocations_pd3)
 
@@ -182,14 +177,13 @@ DTM_pd3 <- corpus_tokens_pd3 %>%
   dfm_trim(min_docfreq = 0.01, max_docfreq = 1, docfreq_type = "prop")
 
 sel_idx_pd3 <- rowSums(DTM_pd3) > 0
-DTM_pd3 <- DTM_pd3[sel_idx, ]
-ADN_pd3 <- ADN_pd3[sel_idx, ]
+DTM_pd3 <- DTM_pd3[sel_idx_pd3, ]
+ADN_pd3 <- ADN_pd3[sel_idx_pd3, ]
 
-require(topicmodels)
 
 # ---- 3.3 Choose the number of topics
 
-K <- 15
+K <- 8
 
 # ---- 3.4 Compute the LDA model, inference via n iterations of Gibbs sampling
 topicModel_pd3 <- LDA(DTM_pd3, K, method="Gibbs", control=list(iter = 500, seed = 1, verbose = 25))
@@ -201,14 +195,15 @@ terms(topicModel_pd3, 10)
 top5termsPerTopic_pd3 <- terms(topicModel_pd3, 5)
 topicNames_pd3 <- apply(top5termsPerTopic_pd3, 2, paste, collapse=" ")
 
+# Change to each topic number and re-run
 topicToViz_pd3 <- 2 # change for your own topic of interest
-topicToViz_pd3 <- grep('ice', topicNames_pd3)[1] # Or select a topic by a term contained in its name
+
 # select to 40 most probable terms from the topic by sorting the term-topic-probability vector in decreasing order
 tmResult_pd3 <- posterior(topicModel_pd3)
-top40terms_pd3 <- sort(tmResult$terms[topicToViz_pd3,], decreasing=TRUE)[1:40]
+top40terms_pd3 <- sort(tmResult_pd3$terms[topicToViz_pd3,], decreasing=TRUE)[1:40]
 words_pd3 <- names(top40terms_pd3)
 # extract the probabilities of each of the 40 terms
-probabilities_pd3 <- sort(tmResult$terms[topicToViz_pd3,], decreasing=TRUE)[1:40]
+probabilities_pd3 <- sort(tmResult_pd3$terms[topicToViz_pd3,], decreasing=TRUE)[1:40]
 # visualize the terms as wordcloud
 wordcloud2(data.frame(words_pd3, probabilities_pd3), shuffle = FALSE, size = 0.8)
 
