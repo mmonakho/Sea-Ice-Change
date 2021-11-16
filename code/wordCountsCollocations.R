@@ -88,7 +88,7 @@ num_docs_peryear <- ADN %>% group_by(year) %>% summarise(n = length(docid))
 mean(num_docs_peryear$n)
 
 
-# Number docs per year period
+# Number docs per 3-year period
 num_docs_byperiod_plot <- 
   ggplot(ADN, aes(x = period)) +
   geom_histogram(stat = "count", fill = "#332288") +
@@ -101,6 +101,13 @@ num_docs_byperiod_plot <-
   theme(axis.text.x = element_text(angle = 330, 
                                    vjust = 1,
                                    hjust = 0))
+
+# Number docs per 8-year period
+num_docs_8yr_period <- 
+  ADN %>%
+  mutate(period = ifelse(year%in%c(1995:2003), "1", ifelse(year%in%c(2004:2012), "2", "3"))) %>%
+  group_by(period) %>%
+  summarise(count = length(docid))
 
 
 # Export plots
@@ -268,15 +275,17 @@ plot_bigrams_byyear <-
   geom_line(aes(x = period, y = value_scaled, 
                 group = collocation, color = collocation),
             size = 1.5) +
-  scale_color_ptol(name = "Collocation\n(stemmed)") +
-  scale_y_continuous(name = "Count / number documents",
-                     expand = c(0,0)) +
+  scale_color_ptol(name = "Collocation") +
+  scale_y_continuous(name = "# / total documents\n",
+                     expand = c(0,0),
+                     limits = c(0, 4.5)) +
   scale_x_discrete(name = "",
                    expand = c(0,0)) +
   seaice.plot.theme +
   theme(axis.text.x = element_text(angle = 330, 
                                    vjust = 1,
-                                   hjust = 0))
+                                   hjust = 0)) +
+  labs(title = "Most Frequent Bigrams")
 
 
 plot_seaice_trigrams_byyear <- 
@@ -284,15 +293,29 @@ plot_seaice_trigrams_byyear <-
   geom_line(aes(x = period, y = value_scaled, 
                 group = collocation, color = collocation),
             size = 1.5) +
-  scale_color_ptol(name = "Collocation\n(stemmed)") +
-  scale_y_continuous(name = "Count / number documents",
-                     expand = c(0,0)) +
+  scale_color_ptol(name = "Collocation") +
+  scale_y_continuous(name = "# / total documents\n",
+                     expand = c(0,0),
+                     limits = c(0, 0.35)) +
   scale_x_discrete(name = "",
                    expand = c(0,0)) +
   seaice.plot.theme +
   theme(axis.text.x = element_text(angle = 330, 
                                    vjust = 1,
                                    hjust = 0)) +
-  labs(title = "Top 10 Words Collocated with 'Sea Ice'",
-       subtitle = "Across entire corpus")
+  labs(title = "Top 10 Words Collocated with 'Sea Ice'")
   
+
+
+# Export plots
+png("data/outputs/Bigrams_peryearperiod.png",
+    units = "in", height = 6, width = 8, res = 400)
+grid.newpage()
+grid.draw(plot_bigrams_byyear)
+dev.off()
+
+png("data/outputs/Seaice_trigrams_peryearperiod.png",
+    units = "in", height = 6, width = 8, res = 400)
+grid.newpage()
+grid.draw(plot_seaice_trigrams_byyear)
+dev.off()

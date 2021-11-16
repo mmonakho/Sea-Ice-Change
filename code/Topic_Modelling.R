@@ -10,19 +10,25 @@
 # ---- SECTION 1: LOAD THE DATA & PACKAGES ----
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# 
 
 
 options(stringsAsFactors = FALSE)
 
 pacman::p_load(topicmodels, quanteda, quanteda.textstats, wordcloud2,
                reshape2, ggplot2, pals)
+
 source('code/metadataExtract.R')
 
+
+# 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
 # ---- SECTION 2: CREATE A DTM AND COMPUTE THE LDA MODEL ----
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# 
+
 
 # ---- 1.1 Create DTM ----
 
@@ -37,7 +43,9 @@ ADNcollocations <- ADNcollocations[1:250]
 
 corpus_tokens <- tokens_compound(corpus_tokens, sotu_collocations)
 
+
 # ---- 1.2 Remove terms which occur in less than 1% of all documents
+
 DTM <- corpus_tokens %>% 
   tokens_remove("") %>%
   dfm() %>% 
@@ -49,19 +57,26 @@ ADN <- ADN[sel_idx, ]
 
 require(topicmodels)
 
+
 # ---- 1.3 Choose the number of topics
+
 K <- 15
 
+
 # ---- 1.4 Compute the LDA model, inference via n iterations of Gibbs sampling
+
 topicModel <- LDA(DTM, K, method="Gibbs", control=list(iter = 500, seed = 1, verbose = 25))
 
 terms(topicModel, 10)
 
+# 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
 # ---- SECTION 2: DATA VISUALIZATION ----
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# 
+
 
 # ---- 2.1 Create a word cloud ----
 

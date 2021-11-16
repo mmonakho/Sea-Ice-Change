@@ -293,7 +293,7 @@ tkplot(
 # ---- 5.1 Define functions to run analyses for different year periods, with different parameters ----
 
 # -- Subsetting function
-subsetDTM <- function(dat = ADN, years = NULL, minDocs = 2) {
+subsetDTM <- function(dat = ADN, years = NULL) {
   
   # filter data & turn into corpus
   dat <- dat %>% filter(year%in%years)
@@ -314,14 +314,12 @@ subsetDTM <- function(dat = ADN, years = NULL, minDocs = 2) {
   sentence_tokens <- tokens_compound(sentence_tokens, collocations)
   
   
-  # identify minimum number of docs
-  minimumFrequency <- minDocs
   
   # create DTM, prune vocabulary and set binary values for presence/absence of types
   binDTM <- sentence_tokens %>% 
     tokens_remove("") %>%
     dfm() %>% 
-    dfm_trim(min_docfreq = minimumFrequency, max_docfreq = 100000) %>% 
+    dfm_trim(min_docfreq = 0.01, max_docfreq = 1, docfreq_type = "prop") %>%  # only include tokens that exist across at least 1% of documents
     dfm_weight("boolean")
   
   return(binDTM)
@@ -390,7 +388,8 @@ sigTests <- function(dat = NULL, numCoocs = 15, coocTerm = "sea_ice") {
     mutate(from = stringr::str_replace_all(from, "_", " "),
            from = stringr::str_replace_all(from, "specie", "species"),
            to = stringr::str_replace_all(to, "_", " "),
-           to = stringr::str_replace_all(to, "specie", "species"))
+           to = stringr::str_replace_all(to, "specie", "species"),
+           edgeType = ifelse(from=="sea ice", "main", ifelse(to=="sea ice", "main", "secondary")))
   
   return(resultGraph)
   
@@ -403,7 +402,7 @@ visualizeByPeriod <- function(dat = NULL, removeDegreeOne = FALSE, cooc = "sea i
   set.seed(1)
   
   # Create the graph object as undirected graph
-  graphNetwork <- graph.data.frame(dat, directed = F)
+  graphNetwork <- graph_from_data_frame(dat, directed = F)
   
   
   # Identification of all nodes with less than 2 edges
@@ -414,49 +413,58 @@ visualizeByPeriod <- function(dat = NULL, removeDegreeOne = FALSE, cooc = "sea i
     graphNetwork <- delete.vertices(graphNetwork, verticesToRemove)  
     
   }
-  
-  
+    
   # Define the frame and spacing for the plot
   par(mai=c(0,0,1,0)) 
   
   
-  # ---- 4.2 Final Plot, able to be manipulated in an output window prior to export ----
+  layout.param <- layout_with_fr(graphNetwork) # Force Directed Layout
+
   
+  # ---- 4.2 Final Plot, able to be manipulated in an output window prior to export ----
+
   tkplot(
-    graphNetwork,             
-    layout = layout.fruchterman.reingold, # Force Directed Layout
-    edge.color = "#C0C0C0",
-    edge.frame.color = "#A9A9A9",
-    edge.width = scales::rescale(E(graphNetwork)$sig, to = c(1, 10)), # scale edge width by significance
-    edge.curved = 0.15,
-    vertex.size = scales::rescale(log(degree(graphNetwork)), to = c(5,20)), # scale vertex size by number of connections
-    vertex.color = ifelse(V(graphNetwork)$name == cooc, "#44AA99", 
-                          ifelse(degree(graphNetwork) < 2, "#FFFFFF", "#88CCEE")),
-    vertex.label.family = "sans",
-    vertex.label.cex = 0.8,
-    vertex.shape = "circle",
-    # vertex.label.dist = 0.5,          # Labels of the nodes moved slightly
-    vertex.frame.color = ifelse(degree(graphNetwork) < 2, "#FFFFFF", "#A9A9A9"),
-    vertex.label.color = 'black',     # Color of node names
-    vertex.label.font = 2,            # Font of node names
-    vertex.label = V(graphNetwork)$name,      # node names
-    vertex.label.cex = 1 # font size of node names
-  )
+      graphNetwork,             
+      layout = layout.param, 
+      canvas.width = 450, 
+      canvas.height = 500,
+      edge.color = ifelse(E(graphNetwork)$edgeType=="main", adjustcolor("#44AA99", 1), adjustcolor("#C0C0C0", 1)),
+      edge.frame.color = "#A9A9A9",
+      edge.width = scales::rescale(E(graphNetwork)$sig, to = c(1, 10)), # scale edge width by significance
+      edge.curved = 0.15,
+      vertex.size = scales::rescale(log(degree(graphNetwork)), to = c(5,20)), # scale vertex size by number of connections
+      vertex.color = ifelse(V(graphNetwork)$name == cooc, "#44AA99", 
+                            ifelse(degree(graphNetwork) < 2, "#FFFFFF", "#88CCEE")),
+      vertex.label.family = "sans",
+      vertex.label.cex = 0.8,
+      vertex.shape = ifelse(degree(graphNetwork) < 2, "none", "circle"),
+      # vertex.label.dist = 0.5,          # Labels of the nodes moved slightly
+      vertex.frame.color = ifelse(degree(graphNetwork) < 2, "#FFFFFF", "#A9A9A9"),
+      vertex.label.color = 'black',     # Color of node names
+      vertex.label.font = tcltk::tkfont.create(family='Helvetica', size=18, weight='bold'),
+      vertex.label = V(graphNetwork)$name,      # node names
+      asp = 0.6,
+      rescale = F
+    )
 }
 
 
+
 # ---- 5.2 Run functions for different year sets and parameters ----
+# Full sample
+binDTM <- subsetDTM(dat = ADN, years = c(1995:2021))
+resultGraph <- sigTests(dat = binDTM, numCoocs = 15, coocTerm = "sea_ice")
 
 # Years 1995-2003
-binDTM_pd1 <- subsetDTM(dat = ADN, years = c(1995:2003), minDocs = 2)
+binDTM_pd1 <- subsetDTM(dat = ADN, years = c(1995:2003))
 resultGraph_pd1 <- sigTests(dat = binDTM_pd1, numCoocs = 15, coocTerm = "sea_ice")
 
 # Years 2004 - 2012
-binDTM_pd2 <- subsetDTM(dat = ADN, years = c(2004:2012), minDocs = 2)
+binDTM_pd2 <- subsetDTM(dat = ADN, years = c(2004:2012))
 resultGraph_pd2 <- sigTests(dat = binDTM_pd2, numCoocs = 15, coocTerm = "sea_ice")
 
 # Years 2013 - 2021
-binDTM_pd3 <- subsetDTM(dat = ADN, years = c(2013:2021), minDocs = 2)
+binDTM_pd3 <- subsetDTM(dat = ADN, years = c(2013:2021))
 resultGraph_pd3 <- sigTests(dat = binDTM_pd3, numCoocs = 15, coocTerm = "sea_ice")
 
 
@@ -480,3 +488,32 @@ visualizeByPeriod(dat = resultGraph, removeDegreeOne = TRUE, cooc = "sea ice", t
 visualizeByPeriod(dat = resultGraph_pd1, removeDegreeOne = TRUE, cooc = "sea ice", titleTerm = "Sea Ice")
 visualizeByPeriod(dat = resultGraph_pd2, removeDegreeOne = TRUE, cooc = "sea ice", titleTerm = "Sea Ice")
 visualizeByPeriod(dat = resultGraph_pd3, removeDegreeOne = TRUE, cooc = "sea ice", titleTerm = "Sea Ice")
+
+
+# Centrality and clustering measures of networks when restricted to 15 cooccurrences
+centrality_pd1 <- rev(sort(closeness(graph.data.frame(resultGraph_pd1, directed = F))))
+centrality_pd2 <- rev(sort(closeness(graph.data.frame(resultGraph_pd2, directed = F))))
+centrality_pd3 <- rev(sort(closeness(graph.data.frame(resultGraph_pd3, directed = F))))
+
+clusteringcoeff_pd1 <- transitivity(graph.data.frame(resultGraph_pd1, directed = F))
+clusteringcoeff_pd2 <- transitivity(graph.data.frame(resultGraph_pd2, directed = F))
+clusteringcoeff_pd3 <- transitivity(graph.data.frame(resultGraph_pd3, directed = F))
+
+
+# Looking at centrality and clustering measures when network is not as restricted (i.e., numCoocs = 50)
+resultGraph_pd1a <- sigTests(dat = binDTM_pd1, numCoocs = 50, coocTerm = "sea_ice")
+centrality_pd1a <- rev(sort(closeness(graph.data.frame(resultGraph_pd1a, directed = F))))
+clusteringcoeff_pd1a <- transitivity(graph.data.frame(resultGraph_pd1a, directed = F))
+
+resultGraph_pd2a <- sigTests(dat = binDTM_pd2, numCoocs = 50, coocTerm = "sea_ice")
+centrality_pd2a <- rev(sort(closeness(graph.data.frame(resultGraph_pd2a, directed = F))))
+clusteringcoeff_pd2a <- transitivity(graph.data.frame(resultGraph_pd2a, directed = F))
+
+resultGraph_pd3a <- sigTests(dat = binDTM_pd3, numCoocs = 50, coocTerm = "sea_ice")
+centrality_pd3a <- rev(sort(closeness(graph.data.frame(resultGraph_pd3a, directed = F))))
+clusteringcoeff_pd3a <- transitivity(graph.data.frame(resultGraph_pd3a, directed = F))
+
+visualizeByPeriod(dat = resultGraph_pd1a, cooc = "sea ice", titleTerm = "Sea Ice")
+clustering_local_pd1a <- data.frame(vertice = V(graph.data.frame(resultGraph_pd1a, directed = F)),
+                                    clustering_coeff = transitivity(graph.data.frame(resultGraph_pd1a, directed = F), type = "local"))
+
