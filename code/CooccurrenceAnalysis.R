@@ -419,7 +419,7 @@ visualizeByPeriod <- function(dat = NULL, removeDegreeOne = FALSE, cooc = "sea i
   layout.param <- layout_with_fr(graphNetwork) # Force Directed Layout
 
   
-  # ---- 4.2 Final Plot, able to be manipulated in an output window prior to export ----
+# Final Plot, able to be manipulated in an output window prior to export
 
   tkplot(
       graphNetwork,             
