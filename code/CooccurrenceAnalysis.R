@@ -1,23 +1,21 @@
 # 
 # code: Co-occurrence Analysis (co-location within sentences)
 # 
-# author: Krista Lawless, kllawles@asu.edu; Kelly Claborn, clabornkelly@gmail.com
-# date: October 2021
+# author: Kelly Claborn, clabornkelly@gmail.com; Krista Lawless, kllawles@asu.edu
+# date: November 2021
 # 
 # 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
-# ---- SECTION 1: IMPORT LIBRARIES, DEFINE FILE PATHS & FUNCTIONS ----
+# ---- SECTION 1: SOURCE SCRIPTS, DEFINE FILE PATHS & FUNCTIONS ----
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
 
 
-# ---- 1.1 Load packages ----
+# ---- 1.1 Set options ----
 
 options(stringsAsFactors = FALSE)
-
-pacman::p_load(tidyverse, quanteda)
 
 
 # ---- 1.2 Source metadataExtract.R for post-processed corpus ----

@@ -13,7 +13,8 @@
 #
 
 
-pacman::p_load(dplyr, quanteda, quanteda.textstats, ggthemes, grid, gridExtra, ggplot2)
+pacman::p_load(rio, reshape2, tidyverse, dplyr, quanteda, quanteda.textstats, topicmodels,
+               ggthemes, grid, gridExtra, ggplot2)
 
 
 # List files from Alaska Dispatch News (ADN) to be included in corpus (n = 1429)
@@ -56,7 +57,9 @@ for(i in 1:length(ADNfiles)) {
   
   clean <- paste(title, aftertitle)
   
-  output <- data.frame(docid = i,
+  output <- data.frame(docid = stringr::str_replace_all(ADNfiles[i], "data/corpus/post-processed/text", "") %>%
+                               stringr::str_replace_all(".txt", "") %>%
+                               as.numeric(),
                        text = clean,
                        title = title, 
                        year = year)
