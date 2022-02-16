@@ -153,9 +153,11 @@ counts_per_year <- aggregate(DTM_reduced, by = list(year = ADN$year), sum)
 
 # ---- 4.1 Find bi-grams and tri-grams across entire corpus ----
 
-ADN_bigrams <- textstat_collocations(ADNcorpus_tokens, size = 2, min_count = 25)
+ADN_bigrams <- textstat_collocations(ADNcorpus_tokens, size = 2, min_count = 25) %>%
+  arrange(desc(count))
 
 ADN_trigrams <- textstat_collocations(ADNcorpus_tokens, size = 3, min_count = 25)
+
 
 seaice_trigrams <-
   ADN_trigrams %>% 
@@ -165,10 +167,12 @@ seaice_trigrams <-
   group_by(collocation) %>%
   summarise(value = sum(count, na.rm = TRUE)) %>%
   arrange(desc(value))
+  
 
 # Subset a list of most frequent bigrams across entire corpus
-ADN_bigrams_mostfrequent <- head(ADN_bigrams, 5)
-ADN_trigrams_seaice_mostfrequent <- head(seaice_trigrams, 10)
+ADN_bigrams_mostfrequent <- head(ADN_bigrams, 6)
+ADN_trigrams_seaice_mostfrequent <- head(seaice_trigrams, 8)
+
 
 # ---- 4.2 Find bi-grams per year ----
 
@@ -200,8 +204,8 @@ for(i in list_bigram_df[-1]) {
 
 
 
-# Wrangle top 5 bi-grams (across full corpus) by year period
-top5_bigrams_byperiod <- 
+# Wrangle top 6 bi-grams (across full corpus) by year period
+top6_bigrams_byperiod <- 
   as.data.frame(bigrams_byperiod) %>% 
   filter(collocation%in%ADN_bigrams_mostfrequent$collocation) %>%
   select(-contains("count_nested") & -contains("length")) %>%
@@ -210,12 +214,13 @@ top5_bigrams_byperiod <-
          variable = sub("_.*", "\\1", name)) %>%
   select(-name) %>%
   left_join(ADN_ndocs_byperiod, by = "period") %>%
-  mutate(value_scaled = value / ndocs)
+  mutate(value_scaled = value / ndocs,
+         collocation = factor(collocation, levels = ADN_bigrams_mostfrequent$collocation, ordered = T))
 
 
 # ---- 4.2 Find sea ice-related tri-grams per year ----
 
-# Calculate sea ice tri-grams per year group
+# Calculate "sea ice" tri-grams per year group
 for(i in names(year_groups)) {
   subset_corpus <- 
     quanteda::corpus(ADN %>% filter(year%in%year_groups[i][[1]])) 
@@ -244,8 +249,8 @@ for(i in list_trigram_df[-1]) {
 
 
 
-# Wrangle top 5 bi-grams (across full corpus) by year period
-top10_trigrams_byperiod <- 
+# Wrangle top 8 tri-grams containing "sea ice" (across full corpus), by year period
+top8_trigrams_byperiod <- 
   as.data.frame(trigrams_byperiod) %>% 
   select(-contains("count_nested") & -contains("length") & -contains("lambda") & -contains("z")) %>%
   tidyr::pivot_longer(cols = `count_1995-1997`:`count_2019-2021`) %>%
@@ -257,8 +262,96 @@ top10_trigrams_byperiod <-
   summarise(value = sum(value, na.rm = TRUE)) %>%
   filter(collocation%in%ADN_trigrams_seaice_mostfrequent$collocation) %>%
   left_join(ADN_ndocs_byperiod, by = "period") %>%
-  mutate(value_scaled = value / ndocs)
+  mutate(value_scaled = value / ndocs,
+         collocation = factor(collocation, levels = ADN_trigrams_seaice_mostfrequent$collocation, ordered = T))
 
+
+# ---- 4.3 Look for "ice"-only bi-grams to compare to "sea ice" trigrams ----
+
+ADN_ice_bigrams <- 
+  ADN %>% 
+  mutate(text = stringr::str_replace_all(text, "sea ice", "seaice"),
+         text = stringr::str_replace_all(text, "SEA ICE", "seaice"),
+         text = stringr::str_replace_all(text, "Sea ice", "seaice"),
+         title = stringr::str_replace_all(title, "sea ice", "seaice"),
+         title = stringr::str_replace_all(title, "SEA ICE", "seaice"),
+         title = stringr::str_replace_all(title, "Sea ice", "seaice")) %>%
+  quanteda::corpus() %>%
+  tokens(remove_punct = TRUE, remove_numbers = TRUE, remove_symbols = TRUE) %>% 
+  tokens_tolower() %>% 
+  tokens_replace(lemma_data$inflected_form, lemma_data$lemma, valuetype = "fixed") %>% 
+  tokens_remove(pattern = stopwords_extended, padding = TRUE) %>%
+  textstat_collocations(., size = 2, min_count = 25)
+
+ice_bigrams <-
+  ADN_ice_bigrams %>% 
+  filter(collocation%in%grep("ice", collocation, value = TRUE)) %>%
+  filter(!collocation%in%grep("service|police|officer|price|seaice", collocation, value = TRUE)) %>%
+  mutate(collocation=stringr::str_replace_all(collocation, "ice", ""),
+         collocation=stringr::str_trim(collocation, side = "both")) %>%
+  group_by(collocation) %>%
+  summarise(value = sum(count, na.rm = TRUE),
+            term = "ice") %>%
+  arrange(desc(value))
+
+ice_seaice_bigrams <-
+  seaice_trigrams %>% mutate(term = "sea ice") %>%
+  rbind.data.frame(ice_bigrams)
+
+export(ice_seaice_bigrams, "data/outputs/ice_seaice_bigrams.csv")
+
+# Calculate "ice" bi-grams per year group
+for(i in names(year_groups)) {
+  subset_corpus <- 
+    quanteda::corpus(ADN %>% 
+                       mutate(text = stringr::str_replace_all(text, "sea ice", "seaice"),
+                              text = stringr::str_replace_all(text, "SEA ICE", "seaice"),
+                              text = stringr::str_replace_all(text, "Sea ice", "seaice"),
+                              title = stringr::str_replace_all(title, "sea ice", "seaice"),
+                              title = stringr::str_replace_all(title, "SEA ICE", "seaice"),
+                              title = stringr::str_replace_all(title, "Sea ice", "seaice")) %>% 
+                       filter(year%in%year_groups[i][[1]])) 
+  
+  token_subset <- 
+    subset_corpus %>%
+    tokens(remove_punct = TRUE, remove_numbers = TRUE, remove_symbols = TRUE) %>% 
+    tokens_tolower() %>% 
+    tokens_replace(lemma_data$inflected_form, lemma_data$lemma, valuetype = "fixed") %>% 
+    tokens_remove(pattern = stopwords_extended, padding = TRUE)
+  
+  assign(paste("ice_bigrams_", i, sep = ""),
+         textstat_collocations(token_subset, size = 2, min_count = 1) %>%
+           rename_with(~ paste0(., "_", i, sep = ""), !starts_with("collocation")) %>%
+           filter(collocation%in%grep("ice", collocation, value = TRUE)) %>%
+           filter(!collocation%in%grep("service|police|officer|price|seaice", collocation, value = TRUE)))
+  
+}
+
+# Join bi-grams together across all year groups
+list_ice_bigram_df <- paste0("ice_bigrams_", names(year_groups), sep = "")
+ice_bigrams_byperiod <- `ice_bigrams_1995-1997`
+
+for(i in list_ice_bigram_df[-1]) {
+  ice_bigrams_byperiod <- full_join(ice_bigrams_byperiod, get(i), by = "collocation")
+}
+
+
+
+# Wrangle top 8 tri-grams containing "sea ice" (across full corpus), by year period
+top10_ice_bigrams_byperiod <- 
+  as.data.frame(ice_bigrams_byperiod) %>% 
+  select(-contains("count_nested") & -contains("length") & -contains("lambda") & -contains("z")) %>%
+  tidyr::pivot_longer(cols = `count_1995-1997`:`count_2019-2021`) %>%
+  mutate(period = substrRight(name, 9),
+         variable = sub("_.*", "\\1", name),
+         collocation=stringr::str_replace_all(collocation, "ice", ""),
+         collocation=stringr::str_trim(collocation, side = "both")) %>%
+  group_by(collocation, period, variable) %>%
+  summarise(value = sum(value, na.rm = TRUE)) %>%
+  filter(collocation%in%ice_bigrams$collocation[1:10]) %>%
+  left_join(ADN_ndocs_byperiod, by = "period") %>%
+  mutate(value_scaled = value / ndocs,
+         collocation = factor(collocation, levels = ice_bigrams$collocation[1:10], ordered = T))
 
 
 # 
@@ -271,12 +364,12 @@ top10_trigrams_byperiod <-
 
 
 plot_bigrams_byyear <- 
-  ggplot(data = top5_bigrams_byperiod %>% filter(variable=="count")) +
+  ggplot(data = top6_bigrams_byperiod %>% filter(variable=="count")) +
   geom_line(aes(x = period, y = value_scaled, 
                 group = collocation, color = collocation),
             size = 1.5) +
   scale_color_ptol(name = "Collocation") +
-  scale_y_continuous(name = "# / total documents\n",
+  scale_y_continuous(name = "",
                      expand = c(0,0),
                      limits = c(0, 4.5)) +
   scale_x_discrete(name = "",
@@ -285,16 +378,16 @@ plot_bigrams_byyear <-
   theme(axis.text.x = element_text(angle = 330, 
                                    vjust = 1,
                                    hjust = 0)) +
-  labs(title = "Most Frequent Bigrams")
+  labs(title = "Most Frequent Bigrams", subtitle = "Relative frequency per time period (count per # of documents)")
 
 
 plot_seaice_trigrams_byyear <- 
-  ggplot(data = top10_trigrams_byperiod) +
+  ggplot(data = top8_trigrams_byperiod) +
   geom_line(aes(x = period, y = value_scaled, 
                 group = collocation, color = collocation),
             size = 1.5) +
   scale_color_ptol(name = "Collocation") +
-  scale_y_continuous(name = "# / total documents\n",
+  scale_y_continuous(name = "",
                      expand = c(0,0),
                      limits = c(0, 0.35)) +
   scale_x_discrete(name = "",
@@ -303,8 +396,26 @@ plot_seaice_trigrams_byyear <-
   theme(axis.text.x = element_text(angle = 330, 
                                    vjust = 1,
                                    hjust = 0)) +
-  labs(title = "Top 10 Words Collocated with 'Sea Ice'")
+  labs(title = "Top 8 Words Collocated with 'Sea Ice'", subtitle = "Relative frequency per time period (count per # of documents)")
   
+
+plot_ice_bigrams_byyear <- 
+  ggplot(data = top10_ice_bigrams_byperiod) +
+  geom_line(aes(x = period, y = value_scaled, 
+                group = collocation, color = collocation),
+            size = 1.5) +
+  scale_color_ptol(name = "Collocation") +
+  scale_y_continuous(name = "",
+                     expand = c(0,0),
+                     limits = c(0, 0.4)) +
+  scale_x_discrete(name = "",
+                   expand = c(0,0)) +
+  seaice.plot.theme +
+  theme(axis.text.x = element_text(angle = 330, 
+                                   vjust = 1,
+                                   hjust = 0)) +
+  labs(title = "Top 10 Words Collocated with 'Ice'", subtitle = "Relative frequency per time period (count per # of documents)")
+
 
 
 # Export plots
@@ -318,4 +429,10 @@ png("data/outputs/Seaice_trigrams_peryearperiod.png",
     units = "in", height = 6, width = 8, res = 400)
 grid.newpage()
 grid.draw(plot_seaice_trigrams_byyear)
+dev.off()
+
+png("data/outputs/Ice_bigrams_peryearperiod.png",
+    units = "in", height = 6, width = 8, res = 400)
+grid.newpage()
+grid.draw(plot_ice_bigrams_byyear)
 dev.off()

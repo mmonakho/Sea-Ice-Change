@@ -13,7 +13,7 @@
 #
 
 
-pacman::p_load(rio, reshape2, tidyverse, dplyr, quanteda, quanteda.textstats, topicmodels,
+pacman::p_load(rio, reshape2, tidyverse, dplyr, quanteda, quanteda.textstats, topicmodels, igraph,
                ggthemes, grid, gridExtra, ggplot2)
 
 

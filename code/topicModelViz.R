@@ -76,7 +76,27 @@ top5_full <- import(paste(input.dir, 'top5_full.csv', sep = ''))
 
 names_full <- import(paste(input.dir, 'names_full.csv', sep = ''), fread = FALSE) %>%
   rename("topicNames" = "topicModel_full.names") %>%
-  mutate(topic = row.names(.))
+  mutate(topic = row.names(.),
+         name = c("Scientific Perspective on Sea Ice",
+                  "Institutional Perspective on Sea Ice",
+                  "Summer Education",
+                  "Polar Bears",
+                  "Local Livelihoods",
+                  "Dog Sled Racing",
+                  "Arctic Oil Drilling",
+                  "Local Impacts",
+                  "Community Activities",
+                  "Arctic Animals & Habitat"),
+         name = factor(name, rev(c("Scientific Perspective on Sea Ice",
+                                   "Institutional Perspective on Sea Ice",
+                                   "Arctic Oil Drilling",
+                                   "Local Livelihoods",
+                                   "Polar Bears",
+                                   "Arctic Animals & Habitat",
+                                   "Local Impacts",
+                                   "Community Activities",
+                                   "Dog Sled Racing",
+                                   "Summer Education")), ordered = T))
 
 termProbabilities_full <- import(paste(input.dir, 'termProbabilities_full.csv', sep = ''))
 
@@ -90,7 +110,7 @@ Probs_byYear_toPlot <-
   mutate(period = ifelse(year%in%c(1995:2003), "1995-2003",
                          ifelse(year%in%c(2004:2012), "2004-2012",
                                 "2013-2021"))) %>%
-  group_by(period, topic, topicNames) %>%
+  group_by(period, topic, topicNames, name) %>%
   summarise(value = mean(value)) %>%
   ungroup() %>%
   mutate(period = factor(period, 
@@ -99,7 +119,6 @@ Probs_byYear_toPlot <-
          topic = factor(topic, levels = c("10","9","8","7","6","5","4","3","2","1"),
                         ordered = T))
 
-names_full <- names_full %>% mutate(topic = as.numeric(topic)) %>% .[rev(order(.$topic)),]
 
 
 # 
@@ -150,17 +169,16 @@ for(i in 1:ntopics) {
 
 plot_topics_byperiod <- 
     ggplot(Probs_byYear_toPlot) +
-    geom_bar(aes(x = period, y = value, group = topic, fill = topic),
+    geom_bar(aes(x = period, y = value, group = name, fill = name),
              stat = "identity", position = "dodge", width = 0.75) +
-    scale_y_continuous(name = "Probability",
+    scale_y_continuous(name = "",
                        expand = c(0,0),
                        limits = c(0, 0.2)) +
     scale_x_discrete(name = "",
                      limits = rev(levels(Probs_byYear_toPlot$period))) +
-    scale_fill_ptol(name = "",
-                    labels = names_full$topicNames) +
-    labs(title = "Topics per time period") +
-    seaice.plot.theme + coord_flip() + guides(fill = guide_legend(reverse = T)) +
+    scale_fill_ptol(name = "") +
+    labs(title = "Topics", subtitle = "Posterior probabilities per time period") +
+    seaice.plot.theme + coord_flip()  + guides(fill = guide_legend(reverse = T)) +
     theme(panel.grid.major.x = element_line(colour = "#C0C0C0",
                                             linetype = 3,
                                             size = 0.4),
@@ -173,3 +191,5 @@ png("data/outputs/topicmodel/Topics_byperiod.png",
 grid.newpage()
 grid.draw(plot_topics_byperiod)
 dev.off()
+
+export(Probs_byYear_toPlot, "C:/Users/kclab/Downloads/Topic_probabilities_byYear.csv")

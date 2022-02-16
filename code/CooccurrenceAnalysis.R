@@ -481,37 +481,56 @@ visualizeByPeriod(dat = resultGraph_pd2, cooc = "sea ice", titleTerm = "Sea Ice"
 visualizeByPeriod(dat = resultGraph_pd3, cooc = "sea ice", titleTerm = "Sea Ice")
 
 
-# Without single degree edges
-visualizeByPeriod(dat = resultGraph, removeDegreeOne = TRUE, cooc = "sea ice", titleTerm = "Sea Ice")
-visualizeByPeriod(dat = resultGraph_pd1, removeDegreeOne = TRUE, cooc = "sea ice", titleTerm = "Sea Ice")
-visualizeByPeriod(dat = resultGraph_pd2, removeDegreeOne = TRUE, cooc = "sea ice", titleTerm = "Sea Ice")
-visualizeByPeriod(dat = resultGraph_pd3, removeDegreeOne = TRUE, cooc = "sea ice", titleTerm = "Sea Ice")
+# # Without single degree edges
+# visualizeByPeriod(dat = resultGraph, removeDegreeOne = TRUE, cooc = "sea ice", titleTerm = "Sea Ice")
+# visualizeByPeriod(dat = resultGraph_pd1, removeDegreeOne = TRUE, cooc = "sea ice", titleTerm = "Sea Ice")
+# visualizeByPeriod(dat = resultGraph_pd2, removeDegreeOne = TRUE, cooc = "sea ice", titleTerm = "Sea Ice")
+# visualizeByPeriod(dat = resultGraph_pd3, removeDegreeOne = TRUE, cooc = "sea ice", titleTerm = "Sea Ice")
 
+# 
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#
+# ---- SECTION 6: NETWORK MEASURES OF CO-OCCURRENCES ----
+#
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#
 
-# Centrality and clustering measures of networks when restricted to 15 cooccurrences
-centrality_pd1 <- rev(sort(closeness(graph.data.frame(resultGraph_pd1, directed = F))))
-centrality_pd2 <- rev(sort(closeness(graph.data.frame(resultGraph_pd2, directed = F))))
-centrality_pd3 <- rev(sort(closeness(graph.data.frame(resultGraph_pd3, directed = F))))
+# ---- 6.1 Model A (15 co-occurrences per "sea ice" / 225 total co-occurrences) ----
+
+# Centrality and clustering measures
+centrality_pd1 <- data.frame(terms = names(rev(sort(closeness(graph.data.frame(resultGraph_pd1, directed = F))))),
+                             centrality = rev(sort(closeness(graph.data.frame(resultGraph_pd1, directed = F)))))
+centrality_pd2 <- data.frame(terms = names(rev(sort(closeness(graph.data.frame(resultGraph_pd2, directed = F))))),
+                             centrality = rev(sort(closeness(graph.data.frame(resultGraph_pd2, directed = F)))))
+centrality_pd3 <- data.frame(terms = names(rev(sort(closeness(graph.data.frame(resultGraph_pd3, directed = F))))),
+                             centrality = rev(sort(closeness(graph.data.frame(resultGraph_pd3, directed = F)))))
 
 clusteringcoeff_pd1 <- transitivity(graph.data.frame(resultGraph_pd1, directed = F))
 clusteringcoeff_pd2 <- transitivity(graph.data.frame(resultGraph_pd2, directed = F))
 clusteringcoeff_pd3 <- transitivity(graph.data.frame(resultGraph_pd3, directed = F))
 
 
+# ---- 6.1 Model B (50 co-occurrences per "sea ice" / 2500 total co-occurrences) ----
+
 # Looking at centrality and clustering measures when network is not as restricted (i.e., numCoocs = 50)
-resultGraph_pd1a <- sigTests(dat = binDTM_pd1, numCoocs = 50, coocTerm = "sea_ice")
-centrality_pd1a <- rev(sort(closeness(graph.data.frame(resultGraph_pd1a, directed = F))))
-clusteringcoeff_pd1a <- transitivity(graph.data.frame(resultGraph_pd1a, directed = F))
 
-resultGraph_pd2a <- sigTests(dat = binDTM_pd2, numCoocs = 50, coocTerm = "sea_ice")
-centrality_pd2a <- rev(sort(closeness(graph.data.frame(resultGraph_pd2a, directed = F))))
-clusteringcoeff_pd2a <- transitivity(graph.data.frame(resultGraph_pd2a, directed = F))
+resultGraph_pd1b <- sigTests(dat = binDTM_pd1, numCoocs = 50, coocTerm = "sea_ice")
+centrality_pd1b <- data.frame(terms = names(rev(sort(closeness(graph.data.frame(resultGraph_pd1b, directed = F))))),
+                              centrality = rev(sort(closeness(graph.data.frame(resultGraph_pd1b, directed = F)))))
+clusteringcoeff_pd1b <- transitivity(graph.data.frame(resultGraph_pd1b, directed = F))
 
-resultGraph_pd3a <- sigTests(dat = binDTM_pd3, numCoocs = 50, coocTerm = "sea_ice")
-centrality_pd3a <- rev(sort(closeness(graph.data.frame(resultGraph_pd3a, directed = F))))
-clusteringcoeff_pd3a <- transitivity(graph.data.frame(resultGraph_pd3a, directed = F))
+resultGraph_pd2b <- sigTests(dat = binDTM_pd2, numCoocs = 50, coocTerm = "sea_ice")
+centrality_pd2b <- data.frame(terms = names(rev(sort(closeness(graph.data.frame(resultGraph_pd2b, directed = F))))),
+                              centrality = rev(sort(closeness(graph.data.frame(resultGraph_pd2b, directed = F)))))
+clusteringcoeff_pd2b <- transitivity(graph.data.frame(resultGraph_pd2b, directed = F))
 
-visualizeByPeriod(dat = resultGraph_pd1a, cooc = "sea ice", titleTerm = "Sea Ice")
-clustering_local_pd1a <- data.frame(vertice = V(graph.data.frame(resultGraph_pd1a, directed = F)),
-                                    clustering_coeff = transitivity(graph.data.frame(resultGraph_pd1a, directed = F), type = "local"))
+resultGraph_pd3b <- sigTests(dat = binDTM_pd3, numCoocs = 50, coocTerm = "sea_ice")
+centrality_pd3b <- data.frame(terms = names(rev(sort(closeness(graph.data.frame(resultGraph_pd3b, directed = F))))),
+                              centrality = rev(sort(closeness(graph.data.frame(resultGraph_pd3b, directed = F)))))
+clusteringcoeff_pd3b <- transitivity(graph.data.frame(resultGraph_pd3b, directed = F))
 
+
+
+# clustering_local_pd1b <- data.frame(vertice = V(graph.data.frame(resultGraph_pd1b, directed = F)),
+#                                     clustering_coeff = transitivity(graph.data.frame(resultGraph_pd1a, directed = F), type = "local"))
+# 
