@@ -92,134 +92,10 @@ topicModelByPeriod <- function(dat = NULL, years = NULL, ntopics = NULL) {
 # 
 
 # ---- NOTE: Have decided to only run the topic modelling function a single time across the full corpus ----
-# Instead, we simply disaggregate by time period when looking at posterior probabilities.  
-# This way, we can compare the same topics through time.
+# To compare topics temporally, we simply disaggregate by time period when looking at posterior probabilities.  
 
 
-
-# # ---- 2.1 Period 1 (1995-2003) ----
-# 
-# # Run topic model function
-# topicModel_pd1 <- topicModelByPeriod(dat = ADN, years = c(1995:2003), ntopics = ntopics)
-# 
-# # Examine topic outputs
-# topicModel_pd1$top5
-# topicModel_pd1$names
-# 
-# # Calculate posterior probability for the top 40 terms within each topic
-# termProbabilities_pd1 <- data.frame(NA)
-# 
-# for(i in 1:ntopics) {
-#   termProbabilities_pd1 <- 
-#     cbind.data.frame(termProbabilities_pd1,
-#                      sort(topicModel_pd1$terms[i,], decreasing = TRUE)[1:40] %>%
-#                        data.frame(terms = names(.), prob = .) %>%
-#                        rename_with(~ paste0(., "_", i, sep = "")))
-#   
-# }
-# 
-# termProbabilities_pd1 <- termProbabilities_pd1 %>% select(-`NA.`)
-# 
-# # Calculate aggregated probability for each topic across the corpus
-# topicProbs_total_pd1 <- colSums(topicModel_pd1$theta) / nrow(topicModel_pd1$DTM)
-# 
-# # Calculate posterior probability for each topic within each document
-# topicProbs_byDoc_pd1 <- 
-#   cbind.data.frame(filename = paste("text", topicModel_pd1$DTM$docid, sep = ""), topicModel_pd1$theta)
-# 
-# # Calculate aggregated probability for each topic by year
-# topicProbs_byYear_pd1 <- 
-#   cbind.data.frame(docid = topicModel_pd1$DTM$docid, topicModel_pd1$theta) %>%
-#   left_join(ADN[,c("docid","year")], by = "docid") %>%
-#   group_by(year) %>%
-#   mutate(ndocs = length(docid)) %>%
-#   ungroup() %>%
-#   group_by(year, ndocs) %>%
-#   summarise_at(vars(4:ncol(.)-2), mean)
-#   
-# 
-# # ---- 2.2 Period 2 (2004-2012) ----
-# 
-# topicModel_pd2 <- topicModelByPeriod(dat = ADN, years = c(2004:2012), ntopics = ntopics)
-# 
-# # Examine topic outputs
-# topicModel_pd2$top5
-# topicModel_pd2$names
-# 
-# # Calculate posterior probability for the top 40 terms within each topic
-# termProbabilities_pd2 <- data.frame(NA)
-# 
-# for(i in 1:ntopics) {
-#   termProbabilities_pd2 <- 
-#     cbind.data.frame(termProbabilities_pd2,
-#                      sort(topicModel_pd2$terms[i,], decreasing = TRUE)[1:40] %>%
-#                        data.frame(terms = names(.), prob = .) %>%
-#                        rename_with(~ paste0(., "_", i, sep = "")))
-#   
-# }
-# 
-# termProbabilities_pd2 <- termProbabilities_pd2 %>% select(-`NA.`)
-# 
-# # Calculate aggregated probability for each topic across the corpus
-# topicProbs_total_pd2 <- colSums(topicModel_pd2$theta) / nrow(topicModel_pd2$DTM)
-# 
-# # Calculate posterior probability for each topic within each document
-# topicProbs_byDoc_pd2 <- 
-#   cbind.data.frame(filename = paste("text", topicModel_pd2$DTM$docid, sep = ""), topicModel_pd2$theta)
-# 
-# # Calculate aggregated probability for each topic by year
-# topicProbs_byYear_pd2 <- 
-#   cbind.data.frame(docid = topicModel_pd2$DTM$docid, topicModel_pd2$theta) %>%
-#   left_join(ADN[,c("docid","year")], by = "docid") %>%
-#   group_by(year) %>%
-#   mutate(ndocs = length(docid)) %>%
-#   ungroup() %>%
-#   group_by(year, ndocs) %>%
-#   summarise_at(vars(4:ncol(.)-2), mean)
-# 
-# 
-# # ---- 2.3 Period 3 (2013-2021) ----
-# 
-# topicModel_pd3 <- topicModelByPeriod(dat = ADN, years = c(2013:2021), ntopics = ntopics)
-# 
-# # Examine topic outputs
-# topicModel_pd3$top5
-# topicModel_pd3$names
-# 
-# # Calculate posterior probability for the top 40 terms within each topic
-# termProbabilities_pd3 <- data.frame(NA)
-# 
-# for(i in 1:ntopics) {
-#   termProbabilities_pd3 <- 
-#   cbind.data.frame(termProbabilities_pd3,
-#                    sort(topicModel_pd3$terms[i,], decreasing = TRUE)[1:40] %>%
-#                      data.frame(terms = names(.), prob = .) %>%
-#                      rename_with(~ paste0(., "_", i, sep = "")))
-# 
-# }
-# 
-# termProbabilities_pd3 <- termProbabilities_pd3 %>% select(-`NA.`)
-# 
-# 
-# # Calculate aggregated probability for each topic across the corpus
-# topicProbs_total_pd3 <- colSums(topicModel_pd3$theta) / nrow(topicModel_pd3$DTM)
-# 
-# # Calculate posterior probability for each topic within each document
-# topicProbs_byDoc_pd3 <- 
-#   cbind.data.frame(filename = paste("text", topicModel_pd3$DTM$docid, sep = ""), topicModel_pd3$theta)
-# 
-# # Calculate aggregated probability for each topic by year
-# topicProbs_byYear_pd3 <- 
-#   cbind.data.frame(docid = topicModel_pd3$DTM$docid, topicModel_pd3$theta) %>%
-#   left_join(ADN[,c("docid","year")], by = "docid") %>%
-#   group_by(year) %>%
-#   mutate(ndocs = length(docid)) %>%
-#   ungroup() %>%
-#   group_by(year, ndocs) %>%
-#   summarise_at(vars(4:ncol(.)-2), mean)
-
-
-# ---- 2.4 Full Corpus (1995-2021) ----
+# ---- 2.1 Full Corpus (1995-2021) ----
 
 topicModel_full <- topicModelByPeriod(dat = ADN, years = c(1995:2021), ntopics = ntopics)
 
@@ -276,19 +152,8 @@ topicProbs_byYear_full <-
 dir.create(paste("data/outputs/topicmodel/", format(Sys.Date(), "%Y%m%d"), sep = ""))
 output.dir <- paste("data/outputs/topicmodel/", format(Sys.Date(), "%Y%m%d"), sep = "")
 
-# ---- 3.2 Export topic names and terms ----
 
-# # Period 1
-# export(topicModel_pd1$top5, paste(output.dir, "top5_pd1.csv", sep = "/"))
-# export(as.data.frame(topicModel_pd1$names), paste(output.dir, "names_pd1.csv", sep = "/"))
-# 
-# # Period 2
-# export(topicModel_pd2$top5, paste(output.dir, "top5_pd2.csv", sep = "/"))
-# export(as.data.frame(topicModel_pd2$names), paste(output.dir, "names_pd2.csv", sep = "/"))
-# 
-# # Period 3
-# export(topicModel_pd3$top5, paste(output.dir, "top5_pd3.csv", sep = "/"))
-# export(as.data.frame(topicModel_pd3$names), paste(output.dir, "names_pd3.csv", sep = "/"))
+# ---- 3.2 Export topic names and terms ----
 
 # Full Corpus
 export(topicModel_full$top5, paste(output.dir, "top5_full.csv", sep = "/"))
@@ -297,28 +162,10 @@ export(as.data.frame(topicModel_full$names), paste(output.dir, "names_full.csv",
 
 # ---- 3.3 Export term probabilities per topic ----
 
-# export(termProbabilities_pd1, paste(output.dir, "termProbabilities_pd1.csv", sep = "/"))
-# export(termProbabilities_pd2, paste(output.dir, "termProbabilities_pd2.csv", sep = "/"))
-# export(termProbabilities_pd3, paste(output.dir, "termProbabilities_pd3.csv", sep = "/"))
 export(termProbabilities_full, paste(output.dir, "termProbabilities_full.csv", sep = "/"))
 
 
-# ---- 3.4 Export topic probabilities by corpus, document, and year ----
-
-# # Period 1
-# export(as.data.frame(topicProbs_total_pd1), paste(output.dir, "topicProbs_total_pd1.csv", sep = "/"))
-# export(topicProbs_byDoc_pd1, paste(output.dir, "topicProbs_byDoc_pd1.csv", sep = "/"))
-# export(topicProbs_byYear_pd1, paste(output.dir, "topicProbs_byYear_pd1.csv", sep = "/"))
-# 
-# # Period 2
-# export(as.data.frame(topicProbs_total_pd2), paste(output.dir, "topicProbs_total_pd2.csv", sep = "/"))
-# export(topicProbs_byDoc_pd2, paste(output.dir, "topicProbs_byDoc_pd2.csv", sep = "/"))
-# export(topicProbs_byYear_pd2, paste(output.dir, "topicProbs_byYear_pd2.csv", sep = "/"))
-# 
-# # Period 3
-# export(as.data.frame(topicProbs_total_pd3), paste(output.dir, "topicProbs_total_pd3.csv", sep = "/"))
-# export(topicProbs_byDoc_pd3, paste(output.dir, "topicProbs_byDoc_pd3.csv", sep = "/"))
-# export(topicProbs_byYear_pd3, paste(output.dir, "topicProbs_byYear_pd3.csv", sep = "/"))
+# ---- 3.4 Export topic probabilities by document, and year ----
 
 # Full Corpus
 export(as.data.frame(topicProbs_total_full), paste(output.dir, "topicProbs_total_full.csv", sep = "/"))

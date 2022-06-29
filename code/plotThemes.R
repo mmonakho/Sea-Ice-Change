@@ -5,7 +5,6 @@
 # date: October 2021
 # 
 # 
-
 # 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
@@ -28,7 +27,7 @@ seaice.plot.theme <- theme(plot.title = element_text(size = 16,
                                                        size = 0.25,
                                                        colour = "#C0C0C0"),
                            panel.grid.major.y = element_line(colour = "#C0C0C0",
-                                                             size = 0.35,
+                                                             size = 0.5,
                                                              linetype = 3),
                            panel.grid.major.x = element_blank(),
                            plot.margin = margin(t = 5, r = 20, b = 5, l = 5, unit = "pt"),
@@ -40,6 +39,8 @@ seaice.plot.theme <- theme(plot.title = element_text(size = 16,
                                                     angle = 0,
                                                     colour = "#303030",
                                                     lineheight = 0.7))
+
+color.fill.3cats <- c("#332288", "#88CCEE", "#117733")
 
 
 # 

@@ -2,7 +2,7 @@
 # code: Co-occurrence Analysis (co-location within sentences)
 # 
 # author: Kelly Claborn, clabornkelly@gmail.com; Krista Lawless, kllawles@asu.edu
-# date: November 2021
+# date: November 2021; modified June 2022
 # 
 # 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -70,6 +70,7 @@ ADN_collocations <- ADN_collocations[1:250, ]
 # Add collocations back into tokenized sentence corpus
 ADNcorpus_sentence_tokens <- tokens_compound(ADNcorpus_sentence_tokens, ADN_collocations)
 
+
 # ---- 2.4 Create DTM for analysis ----
 
 # Identify minimum number of docs token must appear in to be included in analysis
@@ -91,6 +92,9 @@ coocCounts <- t(binDTM) %*% binDTM
 as.matrix(coocCounts[500:510,500:510])
 
 
+
+# ---- NOTE!!! SECTIONS 3 AND 4 ARE NOT NECESSARY IF RUNNING SECTION 5 ----
+
 # 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
@@ -100,183 +104,183 @@ as.matrix(coocCounts[500:510,500:510])
 #
 
 
-# ---- 3.1 Manual calculations of mutual information, Dice, and Log-Likelihood measures ----
-
-# This manual calculation allows for easier learning of how the various significance tests are conducted
-# However, calculateCoocStatistics.R wraps up all of the following tests into a single function
-
-
-# k - Number of all context units in the corpus
-# ki - Number of occurrences of coocTerm
-# kj - Number of occurrences of comparison term j
-# kij - Number of joint occurrences of coocTerm and j
-
-coocTerm <- "sea_ice"
-k <- nrow(binDTM)
-ki <- sum(binDTM[, coocTerm])
-kj <- colSums(binDTM)
-names(kj) <- colnames(binDTM)
-kij <- coocCounts[coocTerm, ]
-
-
-# -- MI: log(k*kij / (ki * kj)
-mutualInformationSig <- log((k * kij) / (ki * kj))
-mutualInformationSig <- mutualInformationSig[order(mutualInformationSig, decreasing = TRUE)]
-
-# -- DICE: 2 X&Y / X + Y 
-dicesig <- 2 * kij / (ki + kj)
-dicesig <- dicesig[order(dicesig, decreasing = TRUE)]
-
-# -- Log Likelihood
-logsig <- 2 * ((k * log(k)) - 
-               (ki * log(ki)) - 
-               (kj * log(kj)) + 
-               (kij * log(kij)) +
-               (k - ki - kj + kij) * log(k - ki - kj + kij) +
-               (ki - kij) * log(ki - kij)  +
-               (kj - kij) * log(kj - kij)  -
-               (k - ki) * log(k - ki) - 
-               (k - kj) * log(k - kj))
-logsig <- logsig[order(logsig, decreasing=T)]
-
-
-# Put all significance statistics in one dataframe
-resultOverView <- data.frame(
-  names(sort(kij, decreasing=T)[1:15]), sort(kij, decreasing=T)[1:15],
-  names(mutualInformationSig[1:15]), mutualInformationSig[1:15], 
-  names(dicesig[1:15]), dicesig[1:15], 
-  names(logsig[1:15]), logsig[1:15],
-  row.names = NULL)
-colnames(resultOverView) <- c("Freq-terms", "Freq", "MI-terms", "MI", 
-                              "Dice-Terms", "Dice", "LL-Terms", "LL")
-print(resultOverView)
-
-
-# ---- 3.2 Automated calculation of significance tests ----
-
-# Define parameters for the central co-occurrence term of interest & number of co-occurrences to include in analysis
-coocTerm <- "sea_ice"
-numberOfCoocs <- 15
-
-# Calculate statistics for coocTerm 
-coocs <- calculateCoocStatistics(coocTerm, binDTM, measure = "LOGLIK")
-
-# Display the main terms (n = numberOfCoocs)
-print(coocs[1:numberOfCoocs])
-
-
-# Create dummy data frame for results 
-resultGraph <- data.frame(from = character(), to = character(), 
-                          sig = numeric(0))
-
-
-# Structure of the temporary graph object is equal to that of the resultGraph
-tmpGraph <- data.frame(from = character(), to = character(), sig = numeric(0))
-
-# Fill the data.frame to produce the correct number of lines
-tmpGraph[1:numberOfCoocs, 3] <- coocs[1:numberOfCoocs]
-# Entry of the search word into the first column in all lines
-tmpGraph[, 1] <- coocTerm
-# Entry of the co-occurrences into the second column of the respective line
-tmpGraph[, 2] <- names(coocs)[1:numberOfCoocs]
-# Set the significances
-tmpGraph[, 3] <- coocs[1:numberOfCoocs]
-
-# Attach the triples to resultGraph
-resultGraph <- rbind(resultGraph, tmpGraph)
-
-
-# Iterate over the most significant numberOfCoocs co-occurrences search term
-for (i in 1:numberOfCoocs){
-  
-  # Calling up the co-occurrence calculation for term i from the search words co-occurrences
-  newCoocTerm <- names(coocs)[i]
-  coocs2 <- calculateCoocStatistics(newCoocTerm, binDTM, measure = "LOGLIK")
-  
-  #print the co-occurrences
-  coocs2[1:10]
-  
-  # Structure of the temporary graph object
-  tmpGraph <- data.frame(from = character(), to = character(), sig = numeric(0))
-  tmpGraph[1:numberOfCoocs, 3] <- coocs2[1:numberOfCoocs]
-  tmpGraph[, 1] <- newCoocTerm
-  tmpGraph[, 2] <- names(coocs2)[1:numberOfCoocs]
-  tmpGraph[, 3] <- coocs2[1:numberOfCoocs]
-  
-  #Append the result to the result graph
-  resultGraph <- rbind(resultGraph, tmpGraph[2:length(tmpGraph[, 1]), ])
-}
-
-
-# ---- 3.3 Post-process output resultGraph data frame, readying for visualization ----
-
-resultGraph <-
-  resultGraph %>%
-  mutate(from = stringr::str_replace_all(from, "_", " "),
-         from = stringr::str_replace_all(from, "specie", "species"),
-         to = stringr::str_replace_all(to, "_", " "),
-         to = stringr::str_replace_all(to, "specie", "species"))
-
-
-
+# # ---- 3.1 Manual calculations of mutual information, Dice, and Log-Likelihood measures ----
 # 
-# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#
-# ---- SECTION 4: VISUALIZATION OF CO-OCCURRENCES ACROSS FULL CORPUS ----
-#
-# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#
+# # This manual calculation allows for easier learning of how the various significance tests are conducted
+# # However, calculateCoocStatistics.R wraps up all of the following tests into a single function
+# 
+# 
+# # k - Number of all context units in the corpus
+# # ki - Number of occurrences of coocTerm
+# # kj - Number of occurrences of comparison term j
+# # kij - Number of joint occurrences of coocTerm and j
+# 
+# coocTerm <- "sea_ice"
+# k <- nrow(binDTM)
+# ki <- sum(binDTM[, coocTerm])
+# kj <- colSums(binDTM)
+# names(kj) <- colnames(binDTM)
+# kij <- coocCounts[coocTerm, ]
+# 
+# 
+# # -- MI: log(k*kij / (ki * kj)
+# mutualInformationSig <- log((k * kij) / (ki * kj))
+# mutualInformationSig <- mutualInformationSig[order(mutualInformationSig, decreasing = TRUE)]
+# 
+# # -- DICE: 2 X&Y / X + Y
+# dicesig <- 2 * kij / (ki + kj)
+# dicesig <- dicesig[order(dicesig, decreasing = TRUE)]
+# 
+# # -- Log Likelihood
+# logsig <- 2 * ((k * log(k)) -
+#                (ki * log(ki)) -
+#                (kj * log(kj)) +
+#                (kij * log(kij)) +
+#                (k - ki - kj + kij) * log(k - ki - kj + kij) +
+#                (ki - kij) * log(ki - kij)  +
+#                (kj - kij) * log(kj - kij)  -
+#                (k - ki) * log(k - ki) -
+#                (k - kj) * log(k - kj))
+# logsig <- logsig[order(logsig, decreasing=T)]
+# 
+# 
+# # Put all significance statistics in one dataframe
+# resultOverView <- data.frame(
+#   names(sort(kij, decreasing=T)[1:15]), sort(kij, decreasing=T)[1:15],
+#   names(mutualInformationSig[1:15]), mutualInformationSig[1:15],
+#   names(dicesig[1:15]), dicesig[1:15],
+#   names(logsig[1:15]), logsig[1:15],
+#   row.names = NULL)
+# colnames(resultOverView) <- c("Freq-terms", "Freq", "MI-terms", "MI",
+#                               "Dice-Terms", "Dice", "LL-Terms", "LL")
+# print(resultOverView)
 
 
-# ---- 4.1 Import library, prepare graphical object for plotting ----
-
-require(igraph)
-
-# set seed for graph plot
-set.seed(1)
-
-# Create the graph object as undirected graph
-graphNetwork <- graph.data.frame(resultGraph, directed = F)
-
-
-# Identification of all nodes with less than 2 edges
-verticesToRemove <- V(graphNetwork)[degree(graphNetwork) < 2]
-
-# OPTIONAL: Remove edges with less than 2 connections from the graph
-# graphNetwork <- delete.vertices(graphNetwork, verticesToRemove) 
-
-
-# # Define the frame and spacing for the plot
-# par(mai=c(0,0,1,0)) 
-
-
-# ---- 4.2 Final Plot, able to be manipulated in an output window prior to export ----
-
-tkplot(
-  graphNetwork,             
-  # layout = layout.fruchterman.reingold, # Force Directed Layout
-  main = "Sea Ice Graph",
-  edge.color = "#C0C0C0",
-  edge.frame.color = "#A9A9A9",
-  edge.width = scales::rescale(E(graphNetwork)$sig, to = c(1, 10)), # scale edge width by significance
-  edge.curved = 0.15,
-  vertex.size = scales::rescale(log(degree(graphNetwork)), to = c(5,20)), # scale vertex size by number of connections
-  vertex.color = ifelse(V(graphNetwork)$name == "sea ice", "#44AA99", 
-                        ifelse(degree(graphNetwork) < 2, "#FFFFFF", "#88CCEE")),
-  vertex.label.family = "sans",
-  vertex.label.cex = 0.8,
-  vertex.shape = "circle",
-  # vertex.label.dist = 0.5,          # Labels of the nodes moved slightly
-  vertex.frame.color = ifelse(degree(graphNetwork) < 2, "#FFFFFF", "#A9A9A9"),
-  vertex.label.color = 'black',     # Color of node names
-  vertex.label.font = 2,            # Font of node names
-  vertex.label = V(graphNetwork)$name,      # node names
-  vertex.label.cex = 0.8, # font size of node names
-  ylim=c(-10, 10),
-  xlim=c(-10, 10),
-  asp = 0,
-  rescale = FALSE
-)
+# # ---- 3.2 Automated calculation of significance tests ----
+# 
+# # Define parameters for the central co-occurrence term of interest & number of co-occurrences to include in analysis
+# coocTerm <- "sea_ice"
+# numberOfCoocs <- 15
+# 
+# # Calculate statistics for coocTerm 
+# coocs <- calculateCoocStatistics(coocTerm, binDTM, measure = "LOGLIK")
+# 
+# # Display the main terms (n = numberOfCoocs)
+# print(coocs[1:numberOfCoocs])
+# 
+# 
+# # Create dummy data frame for results 
+# resultGraph <- data.frame(from = character(), to = character(), 
+#                           sig = numeric(0))
+# 
+# 
+# # Structure of the temporary graph object is equal to that of the resultGraph
+# tmpGraph <- data.frame(from = character(), to = character(), sig = numeric(0))
+# 
+# # Fill the data.frame to produce the correct number of lines
+# tmpGraph[1:numberOfCoocs, 3] <- coocs[1:numberOfCoocs]
+# # Entry of the search word into the first column in all lines
+# tmpGraph[, 1] <- coocTerm
+# # Entry of the co-occurrences into the second column of the respective line
+# tmpGraph[, 2] <- names(coocs)[1:numberOfCoocs]
+# # Set the significances
+# tmpGraph[, 3] <- coocs[1:numberOfCoocs]
+# 
+# # Attach the triples to resultGraph
+# resultGraph <- rbind(resultGraph, tmpGraph)
+# 
+# 
+# # Iterate over the most significant numberOfCoocs co-occurrences search term
+# for (i in 1:numberOfCoocs){
+#   
+#   # Calling up the co-occurrence calculation for term i from the search words co-occurrences
+#   newCoocTerm <- names(coocs)[i]
+#   coocs2 <- calculateCoocStatistics(newCoocTerm, binDTM, measure = "LOGLIK")
+#   
+#   #print the co-occurrences
+#   coocs2[1:10]
+#   
+#   # Structure of the temporary graph object
+#   tmpGraph <- data.frame(from = character(), to = character(), sig = numeric(0))
+#   tmpGraph[1:numberOfCoocs, 3] <- coocs2[1:numberOfCoocs]
+#   tmpGraph[, 1] <- newCoocTerm
+#   tmpGraph[, 2] <- names(coocs2)[1:numberOfCoocs]
+#   tmpGraph[, 3] <- coocs2[1:numberOfCoocs]
+#   
+#   #Append the result to the result graph
+#   resultGraph <- rbind(resultGraph, tmpGraph[2:length(tmpGraph[, 1]), ])
+# }
+# 
+# 
+# # ---- 3.3 Post-process output resultGraph data frame, readying for visualization ----
+# 
+# resultGraph <-
+#   resultGraph %>%
+#   mutate(from = stringr::str_replace_all(from, "_", " "),
+#          from = stringr::str_replace_all(from, "specie", "species"),
+#          to = stringr::str_replace_all(to, "_", " "),
+#          to = stringr::str_replace_all(to, "specie", "species"))
+# 
+# 
+# 
+# # 
+# # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# #
+# # ---- SECTION 4: VISUALIZATION OF CO-OCCURRENCES ACROSS FULL CORPUS ----
+# #
+# # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# #
+# 
+# 
+# # ---- 4.1 Import library, prepare graphical object for plotting ----
+# 
+# require(igraph)
+# 
+# # set seed for graph plot
+# set.seed(1)
+# 
+# # Create the graph object as undirected graph
+# graphNetwork <- graph.data.frame(resultGraph, directed = F)
+# 
+# 
+# # Identification of all nodes with less than 2 edges
+# verticesToRemove <- V(graphNetwork)[degree(graphNetwork) < 2]
+# 
+# # OPTIONAL: Remove edges with less than 2 connections from the graph
+# # graphNetwork <- delete.vertices(graphNetwork, verticesToRemove) 
+# 
+# 
+# # # Define the frame and spacing for the plot
+# # par(mai=c(0,0,1,0)) 
+# 
+# 
+# # ---- 4.2 Final Plot, able to be manipulated in an output window prior to export ----
+# 
+# tkplot(
+#   graphNetwork,             
+#   # layout = layout.fruchterman.reingold, # Force Directed Layout
+#   main = "Sea Ice Graph",
+#   edge.color = "#C0C0C0",
+#   edge.frame.color = "#A9A9A9",
+#   edge.width = scales::rescale(E(graphNetwork)$sig, to = c(1, 10)), # scale edge width by significance
+#   edge.curved = 0.15,
+#   vertex.size = scales::rescale(log(degree(graphNetwork)), to = c(5,20)), # scale vertex size by number of connections
+#   vertex.color = ifelse(V(graphNetwork)$name == "sea ice", "#44AA99", 
+#                         ifelse(degree(graphNetwork) < 2, "#FFFFFF", "#88CCEE")),
+#   vertex.label.family = "sans",
+#   vertex.label.cex = 0.8,
+#   vertex.shape = "circle",
+#   # vertex.label.dist = 0.5,          # Labels of the nodes moved slightly
+#   vertex.frame.color = ifelse(degree(graphNetwork) < 2, "#FFFFFF", "#A9A9A9"),
+#   vertex.label.color = 'black',     # Color of node names
+#   vertex.label.font = 2,            # Font of node names
+#   vertex.label = V(graphNetwork)$name,      # node names
+#   vertex.label.cex = 0.8, # font size of node names
+#   ylim=c(-10, 10),
+#   xlim=c(-10, 10),
+#   asp = 0,
+#   rescale = FALSE
+# )
 
 
 
@@ -449,6 +453,7 @@ visualizeByPeriod <- function(dat = NULL, removeDegreeOne = FALSE, cooc = "sea i
 
 
 # ---- 5.2 Run functions for different year sets and parameters ----
+
 # Full sample
 binDTM <- subsetDTM(dat = ADN, years = c(1995:2021))
 resultGraph <- sigTests(dat = binDTM, numCoocs = 15, coocTerm = "sea_ice")
@@ -466,7 +471,7 @@ binDTM_pd3 <- subsetDTM(dat = ADN, years = c(2013:2021))
 resultGraph_pd3 <- sigTests(dat = binDTM_pd3, numCoocs = 15, coocTerm = "sea_ice")
 
 
-# ---- 5.3 Visualizations per year set
+# ---- 5.3 Visualizations per year set ----
 
 # Full sample
 visualizeByPeriod(dat = resultGraph, cooc = "sea ice", titleTerm = "Sea Ice")
@@ -510,24 +515,39 @@ clusteringcoeff_pd2 <- transitivity(graph.data.frame(resultGraph_pd2, directed =
 clusteringcoeff_pd3 <- transitivity(graph.data.frame(resultGraph_pd3, directed = F))
 
 
-# ---- 6.1 Model B (50 co-occurrences per "sea ice" / 2500 total co-occurrences) ----
+betweenness_pd1 <- betweenness(graph.data.frame(resultGraph_pd1, directed = F))
+betweenness_pd2 <- betweenness(graph.data.frame(resultGraph_pd2, directed = F))
+betweenness_pd3 <- betweenness(graph.data.frame(resultGraph_pd3, directed = F))
 
-# Looking at centrality and clustering measures when network is not as restricted (i.e., numCoocs = 50)
+
+density_pd1 <- edge_density(graph.data.frame(resultGraph_pd1, directed = F))
+density_pd2 <- edge_density(graph.data.frame(resultGraph_pd2, directed = F))
+density_pd3 <- edge_density(graph.data.frame(resultGraph_pd3, directed = F))
+
+
+# ---- 6.2 Model B (50 co-occurrences per "sea ice" / 2500 total co-occurrences) ----
+
+# Looking at closeness centrality, clustering, betweenness centrality measures when network is not as restricted (i.e., numCoocs = 50)
 
 resultGraph_pd1b <- sigTests(dat = binDTM_pd1, numCoocs = 50, coocTerm = "sea_ice")
 centrality_pd1b <- data.frame(terms = names(rev(sort(closeness(graph.data.frame(resultGraph_pd1b, directed = F))))),
                               centrality = rev(sort(closeness(graph.data.frame(resultGraph_pd1b, directed = F)))))
 clusteringcoeff_pd1b <- transitivity(graph.data.frame(resultGraph_pd1b, directed = F))
+betweenness_pd1b <- betweenness(graph.data.frame(resultGraph_pd1b, directed = F))
+
 
 resultGraph_pd2b <- sigTests(dat = binDTM_pd2, numCoocs = 50, coocTerm = "sea_ice")
 centrality_pd2b <- data.frame(terms = names(rev(sort(closeness(graph.data.frame(resultGraph_pd2b, directed = F))))),
                               centrality = rev(sort(closeness(graph.data.frame(resultGraph_pd2b, directed = F)))))
 clusteringcoeff_pd2b <- transitivity(graph.data.frame(resultGraph_pd2b, directed = F))
+betweenness_pd2b <- betweenness(graph.data.frame(resultGraph_pd2b, directed = F))
+
 
 resultGraph_pd3b <- sigTests(dat = binDTM_pd3, numCoocs = 50, coocTerm = "sea_ice")
 centrality_pd3b <- data.frame(terms = names(rev(sort(closeness(graph.data.frame(resultGraph_pd3b, directed = F))))),
                               centrality = rev(sort(closeness(graph.data.frame(resultGraph_pd3b, directed = F)))))
 clusteringcoeff_pd3b <- transitivity(graph.data.frame(resultGraph_pd3b, directed = F))
+betweenness_pd3b <- betweenness(graph.data.frame(resultGraph_pd3b, directed = F))
 
 
 

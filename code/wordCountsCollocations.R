@@ -1,11 +1,9 @@
 # 
-# code: Initial word counts
+# code: Initial analysis - number of docs, bigrams, trigrams
 # 
 # author: Kelly Claborn, clabornkelly@gmail.com
-# date: October 2021
+# date: October 2021; modified: June 2022
 # 
-# 
-
 # 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
@@ -14,14 +12,13 @@
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
 
-
-# ---- Source metadataExtract.R ----
+# ---- 1.1 Source metadataExtract.R ----
 
 source('code/metadataExtract.R')
 source('code/plotThemes.R')
 
 
-# ---- Tokenize corpus ----
+# ---- 1.2 Tokenize corpus ----
 
 ADNcorpus_tokens <- ADNcorpus %>%
   tokens(remove_punct = TRUE, remove_numbers = TRUE, remove_symbols = TRUE) %>% 
@@ -30,7 +27,7 @@ ADNcorpus_tokens <- ADNcorpus %>%
   tokens_remove(pattern = stopwords_extended, padding = TRUE)
 
 
-# ---- Identify year groups to cluster data by ----
+# ---- 1.3 Identify year groups to cluster data by ----
 
 year_groups <- list("1995-1997" = c("1995", "1996", "1997"),
                     "1998-2000" = c("1998", "1999", "2000"),
@@ -57,7 +54,9 @@ substrRight <- function(x, n){
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
 
-# Number of docs per year period from ADN corpus
+
+# ---- 2.1 Number of docs per year period from ADN corpus ----
+
 ADN <- ADN %>% mutate(period = NA)
 
 for(i in names(year_groups)) {
@@ -70,25 +69,36 @@ ADN_ndocs_byperiod <- ADN %>%
   summarise(ndocs = length(docid))
 
 
-# Number docs per year
+# ---- 2.2 Plot number docs per year ----
+
 num_docs_plot <- 
   ggplot(ADN, aes(x = year)) +
   geom_histogram(stat = "count", fill = "#332288") +
+  geom_text(aes(x = 13, y = 111, label = "*")) +
+  geom_text(aes(x = 18, y = 102, label = "*")) +
+  geom_text(aes(x = 21, y = 158, label = "*")) +
   scale_x_discrete(name = "",
                    breaks = seq(1995, 2021, by = 3)) +
   scale_y_continuous(name = "", 
                      expand = c(0,0),
-                     limits = c(0, 160)) +
+                     limits = c(0, 166)) +
   labs(title = "Number documents containing 'sea ice', per year",
        subtitle = "Alaska Dispatch News") +
   seaice.plot.theme
 
+num_docs_plot_arranged <-
+  grid.arrange(num_docs_plot, 
+               bottom = grid.text(label = "*Year of record-breaking loss in sea ice extent",
+                                  x = unit(45, "pt"),
+                                  just = "left"))
+
 num_docs_peryear <- ADN %>% group_by(year) %>% summarise(n = length(docid))
 
-mean(num_docs_peryear$n)
+# export(num_docs_peryear, 'data/outputs/num_docs_per_year.csv')
 
 
-# Number docs per 3-year period
+# ---- 2.3 Plot number docs per 3-year period ----
+
 num_docs_byperiod_plot <- 
   ggplot(ADN, aes(x = period)) +
   geom_histogram(stat = "count", fill = "#332288") +
@@ -102,62 +112,41 @@ num_docs_byperiod_plot <-
                                    vjust = 1,
                                    hjust = 0))
 
-# Number docs per 8-year period
-num_docs_8yr_period <- 
+
+# ---- 2.4 Calcaulte number docs per 9-year period ----
+
+num_docs_9yr_period <- 
   ADN %>%
   mutate(period = ifelse(year%in%c(1995:2003), "1", ifelse(year%in%c(2004:2012), "2", "3"))) %>%
   group_by(period) %>%
   summarise(count = length(docid))
 
 
-# Export plots
+# ---- 2.5 Export number of docs per year plots ----
+
 png("data/outputs/NumDocs_peryear.png",
     units = "in", height = 6, width = 8, res = 400)
 grid.newpage()
-grid.draw(num_docs_plot)
+grid.draw(num_docs_plot_arranged)
 dev.off()
 
 
-# 
-# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#
-# ---- SECTION 3: EXTRACTING WORD COUNTS ----
-#
-# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#
-
-# TM4SS TUTORIAL: https://tm4ss.github.io/docs/Tutorial_3_Frequency.html
-
-
-# ---- 3.1 Find single word counts across entire corpus ----
-
-# ADN_DTM <- ADNcorpus_tokens %>%
-#   dfm()
-# 
-# ADN_DTM_reduced <- ADN_DTM[, c("climate", "sea")]
-
-
-# ---- 3.2 Find single word counts per year for top XX words ----
-
-counts_per_year <- aggregate(DTM_reduced, by = list(year = ADN$year), sum)
-
 
 # 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
-# ---- SECTION 4: EXTRACTING BIGRAMS AND TRIGRAMS ----
+# ---- SECTION 3: EXTRACTING BIGRAMS AND TRIGRAMS ----
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
 
 
-# ---- 4.1 Find bi-grams and tri-grams across entire corpus ----
+# ---- 3.1 Find bi-grams and tri-grams across entire corpus ----
 
 ADN_bigrams <- textstat_collocations(ADNcorpus_tokens, size = 2, min_count = 25) %>%
   arrange(desc(count))
 
 ADN_trigrams <- textstat_collocations(ADNcorpus_tokens, size = 3, min_count = 25)
-
 
 seaice_trigrams <-
   ADN_trigrams %>% 
@@ -168,13 +157,25 @@ seaice_trigrams <-
   summarise(value = sum(count, na.rm = TRUE)) %>%
   arrange(desc(value))
   
+# Look for sea ice trigrams with lower threshold for inclusion (minimum count of 10, instead of 25)
+ADN_trigrams_min10 <- textstat_collocations(ADNcorpus_tokens, size = 3, min_count = 10)
+
+seaice_trigrams_min10 <-
+  ADN_trigrams_min10 %>% 
+  filter(collocation%in%grep("sea ice", collocation, value = TRUE)) %>%
+  mutate(collocation=stringr::str_replace_all(collocation, "sea ice", ""),
+         collocation=stringr::str_trim(collocation, side = "both")) %>%
+  group_by(collocation) %>%
+  summarise(value = sum(count, na.rm = TRUE)) %>%
+  arrange(desc(value))
+
 
 # Subset a list of most frequent bigrams across entire corpus
 ADN_bigrams_mostfrequent <- head(ADN_bigrams, 6)
-ADN_trigrams_seaice_mostfrequent <- head(seaice_trigrams, 8)
+ADN_trigrams_seaice_mostfrequent <- head(seaice_trigrams, 10)
 
 
-# ---- 4.2 Find bi-grams per year ----
+# ---- 3.2 Find bi-grams per year ----
 
 # Calculate bi-grams per year group
 for(i in names(year_groups)) {
@@ -218,7 +219,7 @@ top6_bigrams_byperiod <-
          collocation = factor(collocation, levels = ADN_bigrams_mostfrequent$collocation, ordered = T))
 
 
-# ---- 4.2 Find sea ice-related tri-grams per year ----
+# ---- 3.2 Find sea ice-related tri-grams per year ----
 
 # Calculate "sea ice" tri-grams per year group
 for(i in names(year_groups)) {
@@ -249,8 +250,8 @@ for(i in list_trigram_df[-1]) {
 
 
 
-# Wrangle top 8 tri-grams containing "sea ice" (across full corpus), by year period
-top8_trigrams_byperiod <- 
+# Wrangle top 10 tri-grams containing "sea ice" (across full corpus), by year period
+top10_trigrams_byperiod <- 
   as.data.frame(trigrams_byperiod) %>% 
   select(-contains("count_nested") & -contains("length") & -contains("lambda") & -contains("z")) %>%
   tidyr::pivot_longer(cols = `count_1995-1997`:`count_2019-2021`) %>%
@@ -266,7 +267,7 @@ top8_trigrams_byperiod <-
          collocation = factor(collocation, levels = ADN_trigrams_seaice_mostfrequent$collocation, ordered = T))
 
 
-# ---- 4.3 Look for "ice"-only bi-grams to compare to "sea ice" trigrams ----
+# ---- 3.3 Look for "ice"-only bi-grams to compare to "sea ice" trigrams ----
 
 ADN_ice_bigrams <- 
   ADN %>% 
@@ -298,7 +299,8 @@ ice_seaice_bigrams <-
   seaice_trigrams %>% mutate(term = "sea ice") %>%
   rbind.data.frame(ice_bigrams)
 
-export(ice_seaice_bigrams, "data/outputs/ice_seaice_bigrams.csv")
+# export(ice_seaice_bigrams, "data/outputs/ice_seaice_bigrams.csv")
+
 
 # Calculate "ice" bi-grams per year group
 for(i in names(year_groups)) {
@@ -337,7 +339,7 @@ for(i in list_ice_bigram_df[-1]) {
 
 
 
-# Wrangle top 8 tri-grams containing "sea ice" (across full corpus), by year period
+# Wrangle top 10 bi-grams containing "ice" (across full corpus), by year period
 top10_ice_bigrams_byperiod <- 
   as.data.frame(ice_bigrams_byperiod) %>% 
   select(-contains("count_nested") & -contains("length") & -contains("lambda") & -contains("z")) %>%
@@ -363,12 +365,22 @@ top10_ice_bigrams_byperiod <-
 #
 
 
+# ---- 4.1 Plot bigrams by 3-year period ----
+
 plot_bigrams_byyear <- 
   ggplot(data = top6_bigrams_byperiod %>% filter(variable=="count")) +
+  geom_vline(aes(xintercept = 3.5), linetype = 1, color = "#C0C0C0", size = 0.35) +
+  geom_vline(aes(xintercept = 6.5), linetype = 1, color = "#C0C0C0", size = 0.35) +
+  geom_text(aes(x = 2.25, y = 4.35, label = "1995 - 2003"),
+            color = "#909090", size = 2.5) +
+  geom_text(aes(x = 5, y = 4.35, label = "2004 - 2012"),
+            color = "#909090", size = 2.5) +
+  geom_text(aes(x = 7.75, y = 4.35, label = "2013 - 2021"),
+            color = "#909090", size = 2.5) +
   geom_line(aes(x = period, y = value_scaled, 
                 group = collocation, color = collocation),
             size = 1.5) +
-  scale_color_ptol(name = "Collocation") +
+  scale_color_ptol(name = "") +
   scale_y_continuous(name = "",
                      expand = c(0,0),
                      limits = c(0, 4.5)) +
@@ -381,12 +393,22 @@ plot_bigrams_byyear <-
   labs(title = "Most Frequent Bigrams", subtitle = "Relative frequency per time period (count per # of documents)")
 
 
+# ---- 4.2 Plot "sea ice" trigrams by 3-year period ----
+
 plot_seaice_trigrams_byyear <- 
-  ggplot(data = top8_trigrams_byperiod) +
+  ggplot(data = top10_trigrams_byperiod) +
+  geom_vline(aes(xintercept = 3.5), linetype = 1, color = "#C0C0C0", size = 0.35) +
+  geom_vline(aes(xintercept = 6.5), linetype = 1, color = "#C0C0C0", size = 0.35) +
+  geom_text(aes(x = 2.25, y = 0.34, label = "1995 - 2003"),
+            color = "#909090", size = 2.5) +
+  geom_text(aes(x = 5, y = 0.34, label = "2004 - 2012"),
+            color = "#909090", size = 2.5) +
+  geom_text(aes(x = 7.75, y = 0.34, label = "2013 - 2021"),
+            color = "#909090", size = 2.5) +
   geom_line(aes(x = period, y = value_scaled, 
                 group = collocation, color = collocation),
             size = 1.5) +
-  scale_color_ptol(name = "Collocation") +
+  scale_color_ptol(name = "") +
   scale_y_continuous(name = "",
                      expand = c(0,0),
                      limits = c(0, 0.35)) +
@@ -396,15 +418,17 @@ plot_seaice_trigrams_byyear <-
   theme(axis.text.x = element_text(angle = 330, 
                                    vjust = 1,
                                    hjust = 0)) +
-  labs(title = "Top 8 Words Collocated with 'Sea Ice'", subtitle = "Relative frequency per time period (count per # of documents)")
+  labs(title = "Top 10 Words Collocated with 'Sea Ice'", subtitle = "Relative frequency per time period (count per # of documents)")
   
+
+# ---- 4.3 Plot "ice"-only bigrams by 3-year period ----
 
 plot_ice_bigrams_byyear <- 
   ggplot(data = top10_ice_bigrams_byperiod) +
   geom_line(aes(x = period, y = value_scaled, 
                 group = collocation, color = collocation),
             size = 1.5) +
-  scale_color_ptol(name = "Collocation") +
+  scale_color_ptol(name = "") +
   scale_y_continuous(name = "",
                      expand = c(0,0),
                      limits = c(0, 0.4)) +
@@ -418,7 +442,8 @@ plot_ice_bigrams_byyear <-
 
 
 
-# Export plots
+# ---- 4.4 Export plots ----
+
 png("data/outputs/Bigrams_peryearperiod.png",
     units = "in", height = 6, width = 8, res = 400)
 grid.newpage()
